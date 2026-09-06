@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$SCRIPT_DIR/Movies.Application/docker-compose.yml"
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 API_PROJECT="$SCRIPT_DIR/Movies.Api"
 DB_SERVICE="db"
 
