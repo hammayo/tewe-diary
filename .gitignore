@@ -1,3 +1,6 @@
+## Local secrets / environment
+.env
+
 ## .NET build output
 [Bb]in/
 [Oo]bj/

@@ -4,6 +4,11 @@ using Movies.Application;
 using Movies.Application.Database;
 using Npgsql;
 
+// Load the repo-root .env (walking up from the working directory) so DB credentials
+// are picked up as environment variables during local `dotnet run`. Harmless in
+// environments where real environment variables are provided instead.
+DotNetEnv.Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
@@ -11,8 +16,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Prefer a full connection string if one is supplied, otherwise build it from the
+// individual Postgres environment variables shared with docker-compose.
+var connectionString = config["Database:ConnectionString"]
+    ?? $"Server={config["POSTGRES_HOST"]};Port={config["POSTGRES_PORT"]};" +
+       $"Database={config["POSTGRES_DB"]};User ID={config["POSTGRES_USER"]};" +
+       $"Password={config["POSTGRES_PASSWORD"]};";
+
 builder.Services.AddApplication();
-builder.Services.AddDatabase(config["Database:ConnectionString"]!);
+builder.Services.AddDatabase(connectionString);
 
 var app = builder.Build();
 

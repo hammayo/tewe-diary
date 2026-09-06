@@ -8,12 +8,9 @@
 
     <ItemGroup>
         <PackageReference Include="DotNetEnv" Version="3.2.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Movies.Application\Movies.Application.csproj" />
-      <ProjectReference Include="..\Movies.Contracts\Movies.Contracts.csproj" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.1" />
     </ItemGroup>
 
 </Project>

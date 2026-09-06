@@ -16,17 +16,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Movies.Api/ApiEndpoints.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/ApiEndpoints.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/appsettings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/ApplicationServiceCollectionExtensions.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/ApplicationServiceCollectionExtensions.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/Models/Movie.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Models/Movie.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/Movies.Application.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Movies.Application.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/Repositories/IMovieRepository.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Repositories/IMovieRepository.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/Repositories/MovieRepository.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Repositories/MovieRepository.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Contracts/Responses/MovieResponse.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Contracts/Responses/MovieResponse.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/Controllers/IdentityController.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/Identity.Api.csproj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/Program.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/Properties/launchSettings.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/TokenGenerationRequest.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/appsettings.Development.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Identity.Api/appsettings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,30 +34,37 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="20" />
+    <option name="cachedIndexableFilesCount" value="17" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "hammayo"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;hammayo&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/hammayo/tewe-diary.git",
-    "accountId": "a0a7688d-7d2d-41ff-8f3e-deb327d3efa6"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/hammayo/tewe-diary.git&quot;,
+    &quot;accountId&quot;: &quot;a0a7688d-7d2d-41ff-8f3e-deb327d3efa6&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Helpers/Course.postman_collection.json" root0="FORCE_HIGHLIGHTING" />
   </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6,
@@ -71,31 +75,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    ".NET Launch Settings Profile.Movies.Api: https.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;.NET Launch Settings Profile.Movies.Api: https.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHELLCHECK.PATH&quot;: &quot;/Users/hammayo/Library/Application Support/JetBrains/Rider2026.1/plugins/Shell Script/shellcheck&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;postgresql&quot;
+    ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected=".NET Launch Settings Profile.Movies.Api: https">
     <configuration name="Movies.Api" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -146,6 +157,10 @@
       <workItem from="1788694537346" duration="339000" />
       <workItem from="1788695008194" duration="772000" />
       <workItem from="1788697181311" duration="5586000" />
+      <workItem from="1788706403380" duration="7081000" />
+      <workItem from="1788724569400" duration="471000" />
+      <workItem from="1788725056384" duration="1206000" />
+      <workItem from="1788726270205" duration="1707000" />
     </task>
     <servers />
   </component>
