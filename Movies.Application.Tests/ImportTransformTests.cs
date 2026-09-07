@@ -51,6 +51,48 @@ public class ImportTransformTests
         Assert.Equal(2, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
     }
 
+    [Fact]
+    public async Task Duplicate_tmdb_id_in_batch_inserts_one_row_and_does_not_throw()
+    {
+        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
+        await new DbInitializer(factory).InitializeAsync();
+        using var connection = await factory.CreateConnectionAsync();
+        await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
+
+        // Two lines with the same tmdb_id — simulates TMDB paged list overlap.
+        var lines = new[]
+        {
+            """{"tmdb_id":99901,"Title":"Dup Movie A","YearOfRelease":2020,"Genres":["Action"],"raw":{"id":99901}}""",
+            """{"tmdb_id":99901,"Title":"Dup Movie A","YearOfRelease":2020,"Genres":["Action"],"raw":{"id":99901}}"""
+        };
+
+        await RunImportAsync(connection, lines); // must not throw
+
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
+    }
+
+    [Fact]
+    public async Task Slug_collision_distinct_tmdb_ids_inserts_one_row_and_does_not_throw()
+    {
+        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
+        await new DbInitializer(factory).InitializeAsync();
+        using var connection = await factory.CreateConnectionAsync();
+        await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
+
+        // Two different tmdb_ids but same Title + YearOfRelease → same slug.
+        var lines = new[]
+        {
+            """{"tmdb_id":99902,"Title":"Same Slug Film","YearOfRelease":2019,"Genres":["Drama"],"raw":{"id":99902}}""",
+            """{"tmdb_id":99903,"Title":"Same Slug Film","YearOfRelease":2019,"Genres":["Drama"],"raw":{"id":99903}}"""
+        };
+
+        await RunImportAsync(connection, lines); // must not throw
+
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
+    }
+
     [Theory]
     [InlineData("Toy Story", 1995)]
     [InlineData("Monsters, Inc.", 2001)]
