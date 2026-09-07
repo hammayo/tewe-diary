@@ -6,19 +6,66 @@ re-running only adds movies not already imported.
 
 ## 1. Configure
 
-Add your TMDB v3 API key to `.env` (gitignored):
+Add your TMDB credentials to `.env` (gitignored):
 
     TMDB_API_KEY=<your key>
 
-Get a key at https://www.themoviedb.org/settings/api.
+Get credentials at https://www.themoviedb.org/settings/api. Either a **v3 API key**
+(32-char hex) or a **v4 read-access token** (a JWT) works — `fetch-tmdb.sh` detects
+the shape and uses the correct auth scheme automatically.
 
 ## 2. Fetch (on demand)
 
-    scripts/fetch-tmdb.sh --list popular --pages 5
-    # writes Resources/tmdb-movies.ndjson
+`fetch-tmdb.sh` has three mutually-exclusive modes. All modes write NDJSON to
+`Resources/tmdb-movies.ndjson` (override with `--out PATH`) and paginate with
+`--pages N` (20 movies per page; trending is fixed at 10).
 
-Lists: `popular`, `top_rated`, `now_playing`. 20 movies per page. Override the
-output path with `--out PATH`.
+### List mode (default)
+
+    scripts/fetch-tmdb.sh --list popular --pages 5
+
+Lists: `popular`, `top_rated`, `now_playing`.
+
+### Discover mode (filtered)
+
+Triggered by any of `--year`, `--genre`, `--original-language`, `--sort`,
+`--min-rating`, `--min-votes` (uses TMDB `/discover/movie`):
+
+    # Latest, well-rated movies of a year
+    scripts/fetch-tmdb.sh --year 2024 --pages 10
+
+    # Filter by genre name(s) — comma-separated, matched to TMDB genre ids (OR)
+    scripts/fetch-tmdb.sh --year 2024 --genre "Action,Comedy" --pages 5
+
+    # Hindi-language movies of a year (ISO 639-1 code: hi)
+    scripts/fetch-tmdb.sh --year 2024 --original-language hi --pages 5
+
+    # Hindi action films, highest-rated first, stricter quality floor
+    scripts/fetch-tmdb.sh --year 2024 --original-language hi --genre "Action" \
+      --sort vote_average.desc --min-rating 7 --min-votes 100 --pages 5
+
+Options and defaults:
+
+| Flag | TMDB parameter | Default |
+|------|----------------|---------|
+| `--year YYYY` | `primary_release_year` | (none) |
+| `--genre "A,B"` | `with_genres` (names → ids, OR) | (none) |
+| `--original-language xx` | `with_original_language` (ISO 639-1, e.g. `hi`, `en`, `ja`) | (none) |
+| `--sort field` | `sort_by` (e.g. `primary_release_date.desc`, `vote_average.desc`, `popularity.desc`) | `primary_release_date.desc` |
+| `--min-rating X` | `vote_average.gte` | `6.5` |
+| `--min-votes N` | `vote_count.gte` | `50` |
+
+Note the tension between "latest" and "highly rated": very new releases have few
+votes, so a high `--min-votes` will drop them. Lower `--min-votes 0` to prioritise
+recency, or raise `--min-rating`/`--min-votes` to prioritise quality. An unknown
+`--genre` name aborts with the list of valid genres.
+
+### Trending mode (top 10)
+
+    scripts/fetch-tmdb.sh --trending week    # or: --trending day (defaults to week)
+
+Returns the current top 10 trending movies. Discover/list filters cannot be
+combined with `--trending`.
 
 ## 3. Import into the running db container
 
