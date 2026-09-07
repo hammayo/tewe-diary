@@ -25,4 +25,10 @@
     <ProjectReference Include="..\Movies.Application\Movies.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Fixtures\import-sample.ndjson">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
