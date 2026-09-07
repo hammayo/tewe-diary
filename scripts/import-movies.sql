@@ -7,7 +7,12 @@
 begin;
 
 create temp table _import (doc jsonb) on commit drop;
-\copy _import(doc) from '/tmp/tmdb-movies.ndjson'
+-- Read each NDJSON line verbatim into one jsonb cell. CSV format is used (not the
+-- default TEXT format) because TEXT treats backslash as an escape and would strip
+-- JSON's \" and \\ sequences, corrupting any line containing quotes. QUOTE and
+-- DELIMITER are set to control bytes that never occur in JSON, so no field or quote
+-- processing happens and the whole line is taken as-is.
+\copy _import(doc) from '/tmp/tmdb-movies.ndjson' with (format csv, quote E'\x01', delimiter E'\x02')
 
 \i /tmp/import-transform.sql
 
