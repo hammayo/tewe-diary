@@ -124,14 +124,19 @@ public class MovieRepository : IMovieRepository
             group by id, userrating
             """, new { userId }, cancellationToken: token));
         
-        return result.Select(x => new Movie
+        return result.Select(x =>
         {
-            Id = x.id,
-            Title = x.title,
-            YearOfRelease = x.yearofrelease,
-            Rating = (float?)x.rating,
-            UserRating = (int?)x.userrating,
-            Genres = Enumerable.ToList(x.genres.Split(','))
+            // string_agg returns NULL for a movie with no genres; guard before Split.
+            string? genres = x.genres;
+            return new Movie
+            {
+                Id = x.id,
+                Title = x.title,
+                YearOfRelease = x.yearofrelease,
+                Rating = (float?)x.rating,
+                UserRating = (int?)x.userrating,
+                Genres = genres is null ? new List<string>() : genres.Split(',').ToList()
+            };
         });
     }
 

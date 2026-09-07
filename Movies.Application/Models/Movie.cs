@@ -25,6 +25,8 @@ public partial class Movie
         return $"{sluggedTitle}-{YearOfRelease}";
     }
 
-    [GeneratedRegex("[^0-9A-Za-z _-]", RegexOptions.NonBacktracking, 5)]
+    // NonBacktracking is linear-time, so no match timeout is needed (and a tight one
+    // spuriously throws RegexMatchTimeoutException on Unicode-heavy titles under load).
+    [GeneratedRegex("[^0-9A-Za-z _-]", RegexOptions.NonBacktracking)]
     private static partial Regex SlugRegex();
 }
