@@ -8,7 +8,9 @@
 
     <ItemGroup>
         <PackageReference Include="DotNetEnv" Version="3.2.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.19" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.19" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     </ItemGroup>
 
     <ItemGroup>

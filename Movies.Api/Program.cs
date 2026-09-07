@@ -1,4 +1,8 @@
 using System.Net.Sockets;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Movies.Api;
 using Movies.Api.Mapping;
 using Movies.Application;
 using Movies.Application.Database;
@@ -11,6 +15,40 @@ DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x =>
+{
+    var tokenSecret = config["JWT_TOKEN_SECRET"]
+                      ?? throw new InvalidOperationException("JWT_TOKEN_SECRET is not configured.");
+
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(tokenSecret)),
+        ValidateIssuerSigningKey = true,
+        ValidateLifetime = true,
+        ValidIssuer = config["JWT_ISSUER"],
+        ValidAudience = config["JWT_AUDIENCE"],
+        ValidateIssuer = true,
+        ValidateAudience = true
+    };
+});
+
+builder.Services.AddAuthorization(x =>
+{
+    x.AddPolicy(AuthConstants.AdminUserPolicyName, 
+        p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"));
+    
+    x.AddPolicy(AuthConstants.TrustedMemberPolicyName,
+        p => p.RequireAssertion(c => 
+            c.User.HasClaim(m => m is { Type: AuthConstants.AdminUserClaimName, Value: "true" }) || 
+            c.User.HasClaim(m => m is { Type: AuthConstants.TrustedMemberClaimName, Value: "true" })));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -38,14 +76,15 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<ValidationMappingMiddleware>();
 app.MapControllers();
 
-// Start listening first so the service (and Swagger) is always reachable, even if
+// Start listening first, so the service (and Swagger) is always reachable, even if
 // the database is still coming up. Database initialisation then runs with a short
-// backoff: the container may lag behind its health check, or not be started at all.
+// backoff: the container may lag behind its health check or not be started at all.
 await app.StartAsync();
 
 var dbInitializer = app.Services.GetRequiredService<DbInitializer>();
