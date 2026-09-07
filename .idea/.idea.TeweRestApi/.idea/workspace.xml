@@ -17,14 +17,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Movies.Api/AuthConstants.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Api/Auth/IdentityExtensions.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Api/Controllers/RatingsController.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Application/Models/MovieRating.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Application/Repositories/IRatingRepository.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Application/Repositories/RatingRepository.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Application/Services/IRatingService.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Application/Services/RatingService.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Contracts/Requests/RateMovieRequest.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Movies.Contracts/Responses/MovieRatingResponse.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Identity.Api/Identity.Api.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Identity.Api/Identity.Api.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Identity.Api/TokenGenerationRequest.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Identity.Api/TokenGenerationRequest.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Identity.Api/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Identity.Api/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Api/ApiEndpoints.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/ApiEndpoints.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Api/AuthConstants.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Auth/AuthConstants.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Movies.Api.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Movies.Api.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Movies.Api/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Application/Movies.Application.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Movies.Application.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/ApplicationServiceCollectionExtensions.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/ApplicationServiceCollectionExtensions.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Database/DbInitializer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Database/DbInitializer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Models/Movie.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Models/Movie.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Repositories/IMovieRepository.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Repositories/IMovieRepository.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Repositories/MovieRepository.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Repositories/MovieRepository.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Services/IMovieService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Services/IMovieService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Application/Services/MovieService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Application/Services/MovieService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Movies.Contracts/Responses/MovieResponse.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Contracts/Responses/MovieResponse.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,7 +197,7 @@
       <workItem from="1788725056384" duration="1206000" />
       <workItem from="1788726270205" duration="1707000" />
       <workItem from="1788727989766" duration="5551000" />
-      <workItem from="1788735752672" duration="3646000" />
+      <workItem from="1788735752672" duration="6178000" />
     </task>
     <servers />
   </component>
