@@ -31,17 +31,28 @@ if [ -z "${TMDB_API_KEY:-}" ]; then
 fi
 
 API="https://api.themoviedb.org/3"
-AUTH=(-H "Authorization: Bearer $TMDB_API_KEY" -H "accept: application/json")
+
+# TMDB accepts either a v3 API key (passed as the ?api_key= query parameter) or a
+# v4 read-access token (passed as an Authorization: Bearer header). v4 tokens are
+# JWTs containing dots; anything else is treated as a v3 key. Sending a v3 key as a
+# Bearer token returns HTTP 401, so pick the scheme from the key's shape.
+if printf '%s' "$TMDB_API_KEY" | grep -q '\.'; then
+  AUTH=(-H "Authorization: Bearer $TMDB_API_KEY" -H "accept: application/json")
+  KEY_QS=""
+else
+  AUTH=(-H "accept: application/json")
+  KEY_QS="&api_key=$TMDB_API_KEY"
+fi
 
 # Build the genre id -> name map once.
-GENRE_MAP="$(curl -fsSL "${AUTH[@]}" "$API/genre/movie/list?language=en-US" \
+GENRE_MAP="$(curl -fsSL "${AUTH[@]}" "$API/genre/movie/list?language=en-US${KEY_QS}" \
   | jq -c '[.genres[] | {(.id|tostring): .name}] | add')"
 
 mkdir -p "$(dirname "$OUT")"
 : > "$OUT"
 
 for ((page=1; page<=PAGES; page++)); do
-  curl -fsSL "${AUTH[@]}" "$API/movie/$LIST?language=en-US&page=$page" \
+  curl -fsSL "${AUTH[@]}" "$API/movie/$LIST?language=en-US&page=$page${KEY_QS}" \
     | jq -c --argjson genres "$GENRE_MAP" -f "$SCRIPT_DIR/tmdb-to-ndjson.jq" \
     >> "$OUT"
 done
