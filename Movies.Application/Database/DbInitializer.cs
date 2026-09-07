@@ -42,5 +42,13 @@ public class DbInitializer
             rating integer not null,
             primary key (userid, movieid));
         """);
+
+        await connection.ExecuteAsync("""
+            create table if not exists movie_metadata (
+            movieid uuid primary key references movies (id) on delete cascade,
+            tmdb_id bigint not null unique,
+            raw jsonb not null,
+            fetched_at timestamptz not null default now());
+        """);
     }
 }
