@@ -67,7 +67,12 @@ if [ -n "$TRENDING" ]; then
   MODE="trending"
 elif [ "$discover_requested" = true ]; then
   if [ -n "$LIST" ]; then
-    echo "Error: --list cannot be combined with discover filters (--year/--genre/...)." >&2
+    printf '%s\n' \
+      "Error: --list uses TMDB's curated endpoints, which cannot be filtered." \
+      "       To filter by --year/--genre/--original-language/..., use discover mode:" \
+      "         popular    ->  --sort popularity.desc" \
+      "         top_rated  ->  --sort vote_average.desc" \
+      "       e.g. scripts/fetch-tmdb.sh --original-language en --sort popularity.desc --pages 100" >&2
     exit 2
   fi
   MODE="discover"

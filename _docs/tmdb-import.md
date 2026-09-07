@@ -26,19 +26,23 @@ the shape and uses the correct auth scheme automatically.
 
 Lists: `popular`, `top_rated`, `now_playing`.
 
+`--list` uses TMDB's curated endpoints, which **cannot be filtered**. To filter by
+year/genre/language, use discover mode instead: `--sort popularity.desc` ≈ popular,
+`--sort vote_average.desc` ≈ top_rated (e.g. `--original-language en --sort popularity.desc`).
+
 ### Discover mode (filtered)
 
 Triggered by any of `--year`, `--genre`, `--original-language`, `--sort`,
 `--min-rating`, `--min-votes` (uses TMDB `/discover/movie`):
 
     # Latest, well-rated movies of a year
-    scripts/fetch-tmdb.sh --year 2024 --pages 10
+    scripts/fetch-tmdb.sh --year 2026 --pages 10
 
     # Filter by genre name(s) — comma-separated, matched to TMDB genre ids (OR)
-    scripts/fetch-tmdb.sh --year 2024 --genre "Action,Comedy" --pages 5
+    scripts/fetch-tmdb.sh --year 2025 --genre "Mystery,Thriller,Action,Science Fiction,Comedy" --pages 5
 
     # Hindi-language movies of a year (ISO 639-1 code: hi)
-    scripts/fetch-tmdb.sh --year 2024 --original-language hi --pages 5
+    scripts/fetch-tmdb.sh --year 2026 --original-language hi --pages 5
 
     # Hindi action films, highest-rated first, stricter quality floor
     scripts/fetch-tmdb.sh --year 2024 --original-language hi --genre "Action" \
@@ -46,14 +50,14 @@ Triggered by any of `--year`, `--genre`, `--original-language`, `--sort`,
 
 Options and defaults:
 
-| Flag | TMDB parameter | Default |
-|------|----------------|---------|
-| `--year YYYY` | `primary_release_year` | (none) |
-| `--genre "A,B"` | `with_genres` (names → ids, OR) | (none) |
-| `--original-language xx` | `with_original_language` (ISO 639-1, e.g. `hi`, `en`, `ja`) | (none) |
-| `--sort field` | `sort_by` (e.g. `primary_release_date.desc`, `vote_average.desc`, `popularity.desc`) | `primary_release_date.desc` |
-| `--min-rating X` | `vote_average.gte` | `6.5` |
-| `--min-votes N` | `vote_count.gte` | `50` |
+| Flag                     | TMDB parameter                                                                       | Default                     |
+|--------------------------|--------------------------------------------------------------------------------------|-----------------------------|
+| `--year YYYY`            | `primary_release_year`                                                               | (none)                      |
+| `--genre "A,B"`          | `with_genres` (names → ids, OR)                                                      | (none)                      |
+| `--original-language xx` | `with_original_language` (ISO 639-1, e.g. `hi`, `en`, `ja`)                          | (none)                      |
+| `--sort field`           | `sort_by` (e.g. `primary_release_date.desc`, `vote_average.desc`, `popularity.desc`) | `primary_release_date.desc` |
+| `--min-rating X`         | `vote_average.gte`                                                                   | `6.5`                       |
+| `--min-votes N`          | `vote_count.gte`                                                                     | `50`                        |
 
 Note the tension between "latest" and "highly rated": very new releases have few
 votes, so a high `--min-votes` will drop them. Lower `--min-votes 0` to prioritise
