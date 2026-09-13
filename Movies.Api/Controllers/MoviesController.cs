@@ -24,7 +24,8 @@ public class MoviesController : ControllerBase
     {
         var movie = request.MapToMovie();
         await _movieService.CreateAsync(movie, token);
-        return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id }, movie);
+        var movieResponse = movie.MapToResponse();
+        return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id }, movieResponse);
     }
     
     [HttpGet(ApiEndpoints.Movies.Get)]

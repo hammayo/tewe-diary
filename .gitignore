@@ -37,11 +37,9 @@ bld/
 
 ## JetBrains Rider
 .idea/*
-!.idea/.idea.TeweRestApi/
 .idea/.idea.TeweRestApi/*
-!.idea/.idea.TeweRestApi/.idea/
 .idea/.idea.TeweRestApi/.idea/*
-!.idea/.idea.TeweRestApi/.idea/workspace.xml
+
 *.sln.iml
 _ReSharper*/
 *.[Rr]e[Ss]harper
