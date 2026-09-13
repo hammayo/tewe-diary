@@ -2,7 +2,6 @@ using Dapper;
 using Movies.Application.Database;
 using Movies.Application.Models;
 using Movies.Application.Repositories;
-using Xunit;
 
 namespace Movies.Application.Tests;
 
@@ -35,7 +34,10 @@ public class MovieRepositoryTests
             Id = Guid.NewGuid(), Title = "Has Genre", YearOfRelease = 2024, Genres = ["Action"],
         });
 
-        var all = (await repository.GetAllAsync()).ToList(); // must not throw
+        var all = (await repository.GetAllAsync(new GetAllMoviesOptions
+        {
+            Page = 1, PageSize = 25,
+        })).ToList(); // must not throw
 
         Assert.Equal(2, all.Count);
         Assert.Empty(all.Single(m => m.Title == "No Genre Movie").Genres);

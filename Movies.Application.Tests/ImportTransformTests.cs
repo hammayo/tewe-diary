@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using Movies.Application.Database;
-using Xunit;
 
 namespace Movies.Application.Tests;
 

@@ -7,10 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="DotNetEnv" Version="3.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.19" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+        <PackageReference Include="DotNetEnv" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Swashbuckle.AspNetCore" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     </ItemGroup>
 
 </Project>

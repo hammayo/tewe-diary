@@ -1,5 +1,4 @@
 using Movies.Application.Models;
-using Xunit;
 
 namespace Movies.Application.Tests;
 

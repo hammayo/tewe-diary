@@ -10,7 +10,7 @@ namespace Identity.Api.Controllers;
 [ApiController]
 public class IdentityController : ControllerBase
 {
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(8);
+    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(1);
 
     private readonly IConfiguration _configuration;
 
