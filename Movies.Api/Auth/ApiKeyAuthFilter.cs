@@ -21,7 +21,8 @@ public class ApiKeyAuthFilter : IAuthorizationFilter
             return;
         }
 
-        var apiKey = _configuration["ApiKey"]!;
+        var apiKey = _configuration["API_KEY"]
+                     ?? throw new InvalidOperationException("API_KEY is not configured.");
         if (apiKey != extractedApiKey)
         {
             context.Result = new UnauthorizedObjectResult("Invalid API Key");
