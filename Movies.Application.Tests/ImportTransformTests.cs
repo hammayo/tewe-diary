@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using Movies.Application.Database;
+using Movies.Application.Database.Migrations;
 
 namespace Movies.Application.Tests;
 
@@ -37,7 +38,7 @@ public class ImportTransformTests
     public async Task Transform_is_idempotent_on_tmdb_id()
     {
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        await new DbInitializer(factory).InitializeAsync();
+        MigrationRunner.Run(_fx.ConnectionString);
         using var connection = await factory.CreateConnectionAsync();
         await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
 
@@ -54,7 +55,7 @@ public class ImportTransformTests
     public async Task Duplicate_tmdb_id_in_batch_inserts_one_row_and_does_not_throw()
     {
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        await new DbInitializer(factory).InitializeAsync();
+        MigrationRunner.Run(_fx.ConnectionString);
         using var connection = await factory.CreateConnectionAsync();
         await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
 
@@ -75,7 +76,7 @@ public class ImportTransformTests
     public async Task Slug_collision_distinct_tmdb_ids_inserts_one_row_and_does_not_throw()
     {
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        await new DbInitializer(factory).InitializeAsync();
+        MigrationRunner.Run(_fx.ConnectionString);
         using var connection = await factory.CreateConnectionAsync();
         await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
 

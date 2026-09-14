@@ -11,6 +11,7 @@ using Movies.Api.Mapping;
 using Movies.Api.Swagger;
 using Movies.Application;
 using Movies.Application.Database;
+using Movies.Application.Database.Migrations;
 using Npgsql;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -130,38 +131,59 @@ app.UseMiddleware<ValidationMappingMiddleware>();
 app.MapControllers();
 
 // Start listening first, so the service (and Swagger) is always reachable, even if
-// the database is still coming up. Database initialisation then runs with a short
-// backoff: the container may lag behind its health check or not be started at all.
+// the database is still coming up. Migration then runs with a short backoff: the
+// container may lag behind its health check or not be started at all.
 await app.StartAsync();
 
-var dbInitializer = app.Services.GetRequiredService<DbInitializer>();
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 
-const int maxAttempts = 10;
-var delay = TimeSpan.FromSeconds(2);
-for (var attempt = 1; attempt <= maxAttempts; attempt++)
+// In Azure the deploy pipeline applies migrations with an elevated role before the new
+// version goes live, so the web process must not self-migrate (set MigrateOnStartup=false
+// there). Locally this defaults on for zero-friction `dotnet run` / `./run.sh`.
+var migrateOnStartup = !bool.TryParse(config["Database:MigrateOnStartup"], out var configured) || configured;
+if (migrateOnStartup)
 {
-    try
+    const int maxAttempts = 10;
+    var delay = TimeSpan.FromSeconds(2);
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
     {
-        await dbInitializer.InitializeAsync();
-        startupLogger.LogInformation("Database initialised.");
-        break;
-    }
-    catch (NpgsqlException ex) when (ex.InnerException is SocketException)
-    {
-        if (attempt == maxAttempts)
+        try
         {
-            startupLogger.LogError(
-                "Database still not reachable after {MaxAttempts} attempts: {Message}. The service is running but database calls will fail until Postgres is available. Start it with: docker compose up -d",
-                maxAttempts, ex.Message);
+            MigrationRunner.Run(connectionString);
+            startupLogger.LogInformation("Database migrations applied.");
             break;
         }
+        catch (Exception ex) when (IsDatabaseUnavailable(ex))
+        {
+            if (attempt == maxAttempts)
+            {
+                startupLogger.LogError(
+                    "Database still not reachable after {MaxAttempts} attempts: {Message}. The service is running but database calls will fail until Postgres is available. Start it with: docker compose up -d",
+                    maxAttempts, ex.Message);
+                break;
+            }
 
-        startupLogger.LogWarning(
-            "Database not reachable (attempt {Attempt}/{MaxAttempts}): {Message}. Retrying in {Delay}s...",
-            attempt, maxAttempts, ex.Message, delay.TotalSeconds);
-        await Task.Delay(delay);
+            startupLogger.LogWarning(
+                "Database not reachable (attempt {Attempt}/{MaxAttempts}): {Message}. Retrying in {Delay}s...",
+                attempt, maxAttempts, ex.Message, delay.TotalSeconds);
+            await Task.Delay(delay);
+        }
     }
 }
 
 await app.WaitForShutdownAsync();
+
+// FluentMigrator wraps the underlying Npgsql/socket failure it hits when Postgres isn't up
+// yet, so matching the top-level type isn't enough — walk the inner-exception chain.
+static bool IsDatabaseUnavailable(Exception ex)
+{
+    for (Exception? e = ex; e is not null; e = e.InnerException)
+    {
+        if (e is SocketException)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}

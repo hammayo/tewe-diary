@@ -15,7 +15,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<bool> RateMovieAsync(Guid movieId, int rating, Guid userId, CancellationToken token = default)
     {
-        await using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var result = await connection.ExecuteAsync(new CommandDefinition("""
             insert into ratings(userid, movieid, rating) 
             values (@userId, @movieId, @rating)
@@ -28,7 +28,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<float?> GetRatingAsync(Guid movieId, CancellationToken token = default)
     {
-        await using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         return await connection.QuerySingleOrDefaultAsync<float?>(new CommandDefinition("""
             select round(avg(r.rating), 1) 
             from ratings r
@@ -38,7 +38,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<(float? Rating, int? UserRating)> GetRatingAsync(Guid movieId, Guid userId, CancellationToken token = default)
     {
-        await using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         return await connection.QuerySingleOrDefaultAsync<(float?, int?)>(new CommandDefinition("""
             select round(avg(rating), 1), 
                    (select rating 
@@ -53,7 +53,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<bool> DeleteRatingAsync(Guid movieId, Guid userId, CancellationToken token = default)
     {
-        await using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var result = await connection.ExecuteAsync(new CommandDefinition("""
             delete from ratings
             where movieid = @movieId
@@ -65,7 +65,7 @@ public class RatingRepository : IRatingRepository
 
     public async Task<IEnumerable<MovieRating>> GetRatingsForUserAsync(Guid userId, CancellationToken token = default)
     {
-        await using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         return await connection.QueryAsync<MovieRating>(new CommandDefinition("""
             select r.rating, r.movieid, m.slug
             from ratings r

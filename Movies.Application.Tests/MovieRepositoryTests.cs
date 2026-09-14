@@ -1,5 +1,6 @@
 using Dapper;
 using Movies.Application.Database;
+using Movies.Application.Database.Migrations;
 using Movies.Application.Models;
 using Movies.Application.Repositories;
 
@@ -18,7 +19,7 @@ public class MovieRepositoryTests
         // Regression for the get-all 500: a movie with no genres makes string_agg return
         // NULL, which the dynamic mapping must tolerate rather than calling .Split on null.
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        await new DbInitializer(factory).InitializeAsync();
+        MigrationRunner.Run(_fx.ConnectionString);
         using (var connection = await factory.CreateConnectionAsync())
         {
             await connection.ExecuteAsync("truncate movie_metadata, genres, ratings, movies cascade;");

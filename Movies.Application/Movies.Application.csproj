@@ -8,6 +8,9 @@
 
     <ItemGroup>
       <PackageReference Include="Dapper" />
+      <PackageReference Include="FluentMigrator" />
+      <PackageReference Include="FluentMigrator.Runner" />
+      <PackageReference Include="FluentMigrator.Runner.Postgres" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Npgsql" />
