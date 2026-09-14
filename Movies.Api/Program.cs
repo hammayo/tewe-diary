@@ -4,6 +4,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Movies.Api;
 using Movies.Api.Auth;
 using Movies.Api.Health;
 using Movies.Api.Mapping;
@@ -46,10 +47,7 @@ builder.Services.AddAuthentication(x =>
 
 builder.Services.AddAuthorization(x =>
 {
-    // x.AddPolicy(AuthConstants.AdminUserPolicyName, 
-    //     p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"));
-    
-    x.AddPolicy(AuthConstants.AdminUserPolicyName, 
+    x.AddPolicy(AuthConstants.AdminUserPolicyName,
         p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"));
     
     x.AddPolicy(AuthConstants.TrustedMemberPolicyName,
@@ -81,6 +79,9 @@ builder.Services.AddOutputCache(x =>
 
 builder.Services.AddControllers();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
 
@@ -98,6 +99,8 @@ builder.Services.AddApplication();
 builder.Services.AddDatabase(connectionString);
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

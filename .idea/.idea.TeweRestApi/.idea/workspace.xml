@@ -17,23 +17,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.run/Full Stack.run.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk.Consumer/AuthTokenProvider.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk.Consumer/Movies.Api.Sdk.Consumer.csproj" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk.Consumer/Program.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk/ApiEndpoints.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk/IMoviesApi.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Movies.Api.Sdk/Movies.Api.Sdk.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TeweRestApi/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Directory.Packages.props" beforeDir="false" afterPath="$PROJECT_DIR$/Directory.Packages.props" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Controllers/MoviesController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Mapping/ContractMapping.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Api/Properties/launchSettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Api/Properties/launchSettings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Movies.Contracts/Requests/PagedRequest.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Movies.Contracts/Requests/PagedRequest.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TeweRestApi.sln" beforeDir="false" afterPath="$PROJECT_DIR$/TeweRestApi.sln" afterDir="false" />
-    </list>
+    <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -64,12 +48,12 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="feat-sdk" />
-                    <option name="lastUsedInstant" value="1789336896" />
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1789346661" />
                   </RecentBranch>
                   <RecentBranch>
-                    <option name="branchName" value="main" />
-                    <option name="lastUsedInstant" value="1789336716" />
+                    <option name="branchName" value="feat-sdk" />
+                    <option name="lastUsedInstant" value="1789336896" />
                   </RecentBranch>
                 </list>
               </option>
@@ -128,7 +112,7 @@
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "feat-sdk",
+    "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -239,7 +223,7 @@
       <workItem from="1788727989766" duration="5551000" />
       <workItem from="1788735752672" duration="31470000" />
       <workItem from="1789312406231" duration="9780000" />
-      <workItem from="1789344240203" duration="1792000" />
+      <workItem from="1789344240203" duration="2153000" />
     </task>
     <servers />
   </component>
