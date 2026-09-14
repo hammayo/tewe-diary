@@ -99,18 +99,11 @@ builder.Services.AddHealthChecks()
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen(x => x.OperationFilter<SwaggerDefaultValues>());
 
-// Connection details + SSL are resolved through DatabaseOptions. A full connection string
-// (e.g. from Key Vault) wins; otherwise it's built from the POSTGRES_* vars shared with
-// docker-compose, with SSL applied for managed Postgres.
-var databaseOptions = config.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()
-                      ?? new DatabaseOptions();
-databaseOptions.Host ??= config["POSTGRES_HOST"];
-databaseOptions.Port ??= config["POSTGRES_PORT"];
-databaseOptions.Name ??= config["POSTGRES_DB"];
-databaseOptions.User ??= config["POSTGRES_USER"];
-databaseOptions.Password ??= config["POSTGRES_PASSWORD"];
-
-builder.Services.Configure<DatabaseOptions>(config.GetSection(DatabaseOptions.SectionName));
+// Connection details + SSL are resolved through DatabaseOptions (shared with Movies.DbTool). A
+// full connection string (e.g. from Key Vault) wins; otherwise it's built from the POSTGRES_*
+// vars shared with docker-compose, with SSL applied for managed Postgres.
+var databaseOptions = DatabaseConfiguration.Resolve(config);
+builder.Services.AddSingleton(databaseOptions);
 
 var connectionString = databaseOptions.BuildConnectionString();
 
