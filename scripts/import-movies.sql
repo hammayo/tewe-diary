@@ -1,3 +1,7 @@
+-- Local/ops psql loader. The Azure pipeline uses the .NET MovieImporter instead (same embedded
+-- import-transform.sql). Schema is owned by the FluentMigrator migrations; this script and the
+-- transform only load data and must never define or alter structure.
+--
 -- Run inside the db container after copying the NDJSON + transform into /tmp:
 --   docker cp Resources/tmdb-movies.ndjson  <db>:/tmp/tmdb-movies.ndjson
 --   docker cp scripts/import-transform.sql  <db>:/tmp/import-transform.sql

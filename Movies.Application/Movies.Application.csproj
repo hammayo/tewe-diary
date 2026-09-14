@@ -16,4 +16,12 @@
       <PackageReference Include="Npgsql" />
     </ItemGroup>
 
+    <ItemGroup>
+      <!-- Single source of truth: the import transform lives in scripts/ and is embedded so the
+           MovieImporter runs the exact same SQL as the psql-based ops path. -->
+      <EmbeddedResource Include="..\scripts\import-transform.sql">
+        <LogicalName>Movies.Application.import-transform.sql</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
-using System.Data;
 using Dapper;
 using Movies.Application.Database;
+using Movies.Application.Database.Import;
 using Movies.Application.Database.Migrations;
 
 namespace Movies.Application.Tests;
@@ -12,39 +12,27 @@ public class ImportTransformTests
 
     public ImportTransformTests(PostgresFixture fx) => _fx = fx;
 
-    private static string TransformSql() =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..",
-            "scripts", "import-transform.sql"));
-
     private static string[] FixtureLines() =>
         File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "import-sample.ndjson"));
 
-    private static async Task RunImportAsync(IDbConnection connection, string[] ndjsonLines)
-    {
-        using var tx = connection.BeginTransaction();
-        await connection.ExecuteAsync(
-            "create temp table _import (doc jsonb) on commit drop;", transaction: tx);
-        foreach (var line in ndjsonLines.Where(l => l.Trim().Length > 0))
-        {
-            await connection.ExecuteAsync(
-                "insert into _import (doc) values (@doc::jsonb);",
-                new { doc = line }, transaction: tx);
-        }
-        await connection.ExecuteAsync(TransformSql(), transaction: tx);
-        tx.Commit();
-    }
-
-    [Fact]
-    public async Task Transform_is_idempotent_on_tmdb_id()
+    private async Task<(NpgsqlConnectionFactory factory, MovieImporter importer)> FreshDbAsync()
     {
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
         MigrationRunner.Run(_fx.ConnectionString);
         using var connection = await factory.CreateConnectionAsync();
-        await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
+        await connection.ExecuteAsync("truncate movie_metadata, genres, ratings, movies cascade;");
+        return (factory, new MovieImporter(factory));
+    }
+
+    [Fact]
+    public async Task Import_is_idempotent_on_tmdb_id()
+    {
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
 
         var lines = FixtureLines();
-        await RunImportAsync(connection, lines);
-        await RunImportAsync(connection, lines); // second run must add nothing
+        await importer.ImportAsync(lines);
+        await importer.ImportAsync(lines); // second run refreshes in place, adds nothing
 
         Assert.Equal(2, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
         Assert.Equal(4, await connection.ExecuteScalarAsync<int>("select count(*) from genres;"));
@@ -54,10 +42,8 @@ public class ImportTransformTests
     [Fact]
     public async Task Duplicate_tmdb_id_in_batch_inserts_one_row_and_does_not_throw()
     {
-        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        MigrationRunner.Run(_fx.ConnectionString);
+        var (factory, importer) = await FreshDbAsync();
         using var connection = await factory.CreateConnectionAsync();
-        await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
 
         // Two lines with the same tmdb_id — simulates TMDB paged list overlap.
         var lines = new[]
@@ -66,7 +52,7 @@ public class ImportTransformTests
             """{"tmdb_id":99901,"Title":"Dup Movie A","YearOfRelease":2020,"Genres":["Action"],"raw":{"id":99901}}"""
         };
 
-        await RunImportAsync(connection, lines); // must not throw
+        await importer.ImportAsync(lines); // must not throw
 
         Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
         Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
@@ -75,10 +61,8 @@ public class ImportTransformTests
     [Fact]
     public async Task Slug_collision_distinct_tmdb_ids_inserts_one_row_and_does_not_throw()
     {
-        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        MigrationRunner.Run(_fx.ConnectionString);
+        var (factory, importer) = await FreshDbAsync();
         using var connection = await factory.CreateConnectionAsync();
-        await connection.ExecuteAsync("truncate movie_metadata, genres, movies cascade;");
 
         // Two different tmdb_ids but same Title + YearOfRelease → same slug.
         var lines = new[]
@@ -87,10 +71,98 @@ public class ImportTransformTests
             """{"tmdb_id":99903,"Title":"Same Slug Film","YearOfRelease":2019,"Genres":["Drama"],"raw":{"id":99903}}"""
         };
 
-        await RunImportAsync(connection, lines); // must not throw
+        await importer.ImportAsync(lines); // must not throw
 
         Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
         Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
+    }
+
+    [Fact]
+    public async Task Reimport_refreshes_existing_movie_in_place_and_preserves_ratings()
+    {
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        await importer.ImportAsync(new[]
+        {
+            """{"tmdb_id":862,"Title":"Toy Story","YearOfRelease":1995,"Genres":["Animation","Comedy"],"raw":{"id":862,"v":1}}"""
+        });
+        var id = await connection.ExecuteScalarAsync<Guid>("select id from movies where slug = 'toy-story-1995';");
+
+        // A real user rates the movie — this must survive a refresh.
+        var userId = Guid.NewGuid();
+        await connection.ExecuteAsync(
+            "insert into ratings (userid, movieid, rating) values (@userId, @id, 5);", new { userId, id });
+
+        // Re-import the same tmdb_id with changed title/year/genres/raw.
+        await importer.ImportAsync(new[]
+        {
+            """{"tmdb_id":862,"Title":"Toy Story Remastered","YearOfRelease":1996,"Genres":["Animation"],"raw":{"id":862,"v":2}}"""
+        });
+
+        // Same identity, refreshed fields.
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
+        Assert.Equal(id, await connection.ExecuteScalarAsync<Guid>("select id from movies where slug = 'toy-story-remastered-1996';"));
+        Assert.Equal("Toy Story Remastered", await connection.ExecuteScalarAsync<string>("select title from movies where id = @id;", new { id }));
+        Assert.Equal(1996, await connection.ExecuteScalarAsync<int>("select yearofrelease from movies where id = @id;", new { id }));
+        Assert.Equal(new[] { "Animation" }, (await connection.QueryAsync<string>("select name from genres where movieid = @id;", new { id })).ToArray());
+        Assert.Equal("2", await connection.ExecuteScalarAsync<string>("select raw->>'v' from movie_metadata where movieid = @id;", new { id }));
+
+        // Rating preserved.
+        Assert.Equal(5, await connection.ExecuteScalarAsync<int>(
+            "select rating from ratings where movieid = @id and userid = @userId;", new { id, userId }));
+    }
+
+    [Fact]
+    public async Task Import_leaves_manual_movies_untouched()
+    {
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // A manually/API-created movie has no movie_metadata row.
+        var manualId = Guid.NewGuid();
+        await connection.ExecuteAsync(
+            "insert into movies (id, slug, title, yearofrelease) values (@manualId, 'manual-classic-2000', 'Manual Classic', 2000);",
+            new { manualId });
+        await connection.ExecuteAsync("insert into genres (movieid, name) values (@manualId, 'Cult');", new { manualId });
+        var userId = Guid.NewGuid();
+        await connection.ExecuteAsync(
+            "insert into ratings (userid, movieid, rating) values (@userId, @manualId, 4);", new { userId, manualId });
+
+        await importer.ImportAsync(new[]
+        {
+            """{"tmdb_id":862,"Title":"Toy Story","YearOfRelease":1995,"Genres":["Animation"],"raw":{"id":862}}"""
+        });
+
+        // Manual movie completely unchanged, no metadata created for it.
+        Assert.Equal(2, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
+        Assert.Equal("Manual Classic", await connection.ExecuteScalarAsync<string>("select title from movies where id = @manualId;", new { manualId }));
+        Assert.Equal("Cult", await connection.ExecuteScalarAsync<string>("select name from genres where movieid = @manualId;", new { manualId }));
+        Assert.Equal(4, await connection.ExecuteScalarAsync<int>("select rating from ratings where movieid = @manualId;", new { manualId }));
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata where movieid = @manualId;", new { manualId }));
+    }
+
+    [Fact]
+    public async Task Import_skips_tmdb_movie_that_collides_with_a_manual_slug()
+    {
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // Manual movie already owns the slug that TMDB "Toy Story" (1995) would generate.
+        var manualId = Guid.NewGuid();
+        await connection.ExecuteAsync(
+            "insert into movies (id, slug, title, yearofrelease) values (@manualId, 'toy-story-1995', 'My Own Toy Story', 1995);",
+            new { manualId });
+
+        await importer.ImportAsync(new[]
+        {
+            """{"tmdb_id":862,"Title":"Toy Story","YearOfRelease":1995,"Genres":["Animation"],"raw":{"id":862}}"""
+        });
+
+        // TMDB movie skipped, manual movie preserved.
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movies;"));
+        Assert.Equal("My Own Toy Story", await connection.ExecuteScalarAsync<string>("select title from movies where id = @manualId;", new { manualId }));
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("select count(*) from movie_metadata;"));
     }
 
     [Theory]

@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Movies.Application.Database;
+using Movies.Application.Database.Import;
 using Movies.Application.Repositories;
 using Movies.Application.Services;
 
@@ -24,6 +25,7 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddSingleton<IDbConnectionFactory>(_ =>
             new NpgsqlConnectionFactory(connectionString));
+        services.AddSingleton<MovieImporter>();
 
         return services;
     }
