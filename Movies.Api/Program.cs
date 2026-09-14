@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text;
 using Asp.Versioning;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +23,15 @@ DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+
+// In Azure, secrets (DB connection string, JWT secret, API key) come from Key Vault via the
+// app's managed identity. Locally KeyVault:Uri is unset, so this is skipped and .env / env vars
+// are used instead. Secret names map to config keys with `--` → `:` (e.g. Database--ConnectionString).
+var keyVaultUri = config["KeyVault:Uri"];
+if (!string.IsNullOrWhiteSpace(keyVaultUri))
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), new DefaultAzureCredential());
+}
 
 builder.Services.AddAuthentication(x =>
 {
@@ -89,12 +99,20 @@ builder.Services.AddHealthChecks()
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen(x => x.OperationFilter<SwaggerDefaultValues>());
 
-// Prefer a full connection string if one is supplied, otherwise build it from the
-// individual Postgres environment variables shared with docker-compose.
-var connectionString = config["Database:ConnectionString"]
-    ?? $"Server={config["POSTGRES_HOST"]};Port={config["POSTGRES_PORT"]};" +
-       $"Database={config["POSTGRES_DB"]};User ID={config["POSTGRES_USER"]};" +
-       $"Password={config["POSTGRES_PASSWORD"]};";
+// Connection details + SSL are resolved through DatabaseOptions. A full connection string
+// (e.g. from Key Vault) wins; otherwise it's built from the POSTGRES_* vars shared with
+// docker-compose, with SSL applied for managed Postgres.
+var databaseOptions = config.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()
+                      ?? new DatabaseOptions();
+databaseOptions.Host ??= config["POSTGRES_HOST"];
+databaseOptions.Port ??= config["POSTGRES_PORT"];
+databaseOptions.Name ??= config["POSTGRES_DB"];
+databaseOptions.User ??= config["POSTGRES_USER"];
+databaseOptions.Password ??= config["POSTGRES_PASSWORD"];
+
+builder.Services.Configure<DatabaseOptions>(config.GetSection(DatabaseOptions.SectionName));
+
+var connectionString = databaseOptions.BuildConnectionString();
 
 builder.Services.AddApplication();
 builder.Services.AddDatabase(connectionString);
@@ -138,10 +156,9 @@ await app.StartAsync();
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 
 // In Azure the deploy pipeline applies migrations with an elevated role before the new
-// version goes live, so the web process must not self-migrate (set MigrateOnStartup=false
-// there). Locally this defaults on for zero-friction `dotnet run` / `./run.sh`.
-var migrateOnStartup = !bool.TryParse(config["Database:MigrateOnStartup"], out var configured) || configured;
-if (migrateOnStartup)
+// version goes live, so the web process must not self-migrate (set Database:MigrateOnStartup
+// to false there). Locally this defaults on for zero-friction `dotnet run` / `./run.sh`.
+if (databaseOptions.MigrateOnStartup)
 {
     const int maxAttempts = 10;
     var delay = TimeSpan.FromSeconds(2);
