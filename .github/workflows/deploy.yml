@@ -1,18 +1,23 @@
 name: Deploy
 
-# Build → test → push image → migrate (DDL role) → deploy to staging slot → warm → swap.
-# Migrations run BEFORE the swap; keep them backward-compatible (expand/contract) so the old
-# image keeps serving until the swap instant.
+# Build → test → push images (Movies.Api + Identity.Api) → migrate (DDL role) → deploy both to
+# staging slots → warm → swap. Migrations run BEFORE the swap; keep them backward-compatible
+# (expand/contract) so the old image keeps serving until the swap instant.
 #
 # Required GitHub configuration:
 #   secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID   (OIDC federated identity)
-#   vars:    ACR_NAME, ACR_LOGIN_SERVER, RESOURCE_GROUP, WEBAPP_NAME, SLOT_NAME,
-#            PG_SERVER_NAME, KEY_VAULT_NAME, MIGRATION_CONNECTION_SECRET
+#   vars:    ACR_NAME, ACR_LOGIN_SERVER, RESOURCE_GROUP, KEY_VAULT_NAME, PG_SERVER_NAME,
+#            MIGRATION_CONNECTION_SECRET,
+#            WEBAPP_NAME, SLOT_NAME,                     (Movies.Api Web App + slot)
+#            IDENTITY_WEBAPP_NAME, IDENTITY_SLOT_NAME    (Identity.Api Web App + slot)
 # Azure prerequisites (one-time):
 #   - Federated credential on the app registration for this repo/environment.
-#   - Web App (+ SLOT_NAME slot) is a Web App for Containers; managed identity has AcrPull on the
-#     ACR and get/list on the Key Vault; app setting WEBSITES_PORT=8080.
-#   - App settings: KeyVault:Uri, Database:SslMode=Require, Database:MigrateOnStartup=false.
+#   - Two Web Apps for Containers (Movies + Identity), each with its staging slot and a managed
+#     identity holding AcrPull on the ACR (Movies also needs get/list on the Key Vault);
+#     app setting WEBSITES_PORT=8080 on both.
+#   - Movies app settings: KeyVault:Uri, Database:SslMode=Require, Database:MigrateOnStartup=false.
+#   - Identity app settings: JWT_TOKEN_SECRET, JWT_ISSUER, JWT_AUDIENCE — these MUST match the
+#     values Movies.Api validates with, or issued tokens will be rejected.
 #   - Flexible Server uses public access; the OIDC identity can manage its firewall rules.
 
 on:
@@ -51,14 +56,18 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push image
+      - name: Build and push images
         run: |
           set -euo pipefail
           az acr login --name "${{ vars.ACR_NAME }}"
-          IMAGE="${{ vars.ACR_LOGIN_SERVER }}/movies-api:${GITHUB_SHA}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          MOVIES_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/movies-api:${GITHUB_SHA}"
+          IDENTITY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/identity-api:${GITHUB_SHA}"
+          docker build -t "$MOVIES_IMAGE" -f Dockerfile .
+          docker build -t "$IDENTITY_IMAGE" -f Dockerfile.identity .
+          docker push "$MOVIES_IMAGE"
+          docker push "$IDENTITY_IMAGE"
+          echo "MOVIES_IMAGE=$MOVIES_IMAGE" >> "$GITHUB_ENV"
+          echo "IDENTITY_IMAGE=$IDENTITY_IMAGE" >> "$GITHUB_ENV"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -80,28 +89,41 @@ jobs:
                 --name "${{ vars.MIGRATION_CONNECTION_SECRET }}" --query value -o tsv)"
           Database__ConnectionString="$CS" dotnet run --project Movies.DbTool -c Release -- migrate
 
-      - name: Deploy image to staging slot
+      - name: Deploy images to staging slots
         run: |
           set -euo pipefail
           az webapp config container set \
             -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
             --slot "${{ vars.SLOT_NAME }}" \
-            --container-image-name "$IMAGE" \
+            --container-image-name "$MOVIES_IMAGE" \
+            --container-registry-url "https://${{ vars.ACR_LOGIN_SERVER }}"
+          az webapp config container set \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.IDENTITY_WEBAPP_NAME }}" \
+            --slot "${{ vars.IDENTITY_SLOT_NAME }}" \
+            --container-image-name "$IDENTITY_IMAGE" \
             --container-registry-url "https://${{ vars.ACR_LOGIN_SERVER }}"
 
-      - name: Warm staging slot
+      - name: Warm staging slots
         run: |
           set -euo pipefail
-          URL="https://${{ vars.WEBAPP_NAME }}-${{ vars.SLOT_NAME }}.azurewebsites.net/_health"
-          for i in $(seq 1 12); do
-            if curl -fsS "$URL"; then echo "healthy"; exit 0; fi
-            echo "waiting for slot ($i)..."; sleep 10
-          done
-          echo "Staging slot did not become healthy" >&2
-          exit 1
+          warm() {
+            local url="$1"
+            for i in $(seq 1 12); do
+              if curl -fsS "$url" >/dev/null; then echo "healthy: $url"; return 0; fi
+              echo "waiting ($i) for $url..."; sleep 10
+            done
+            echo "Slot did not become healthy: $url" >&2
+            return 1
+          }
+          warm "https://${{ vars.WEBAPP_NAME }}-${{ vars.SLOT_NAME }}.azurewebsites.net/_health"
+          warm "https://${{ vars.IDENTITY_WEBAPP_NAME }}-${{ vars.IDENTITY_SLOT_NAME }}.azurewebsites.net/_health"
 
       - name: Swap staging into production
         run: |
+          set -euo pipefail
           az webapp deployment slot swap \
             -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
             --slot "${{ vars.SLOT_NAME }}" --target-slot production
+          az webapp deployment slot swap \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.IDENTITY_WEBAPP_NAME }}" \
+            --slot "${{ vars.IDENTITY_SLOT_NAME }}" --target-slot production

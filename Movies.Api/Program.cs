@@ -3,6 +3,7 @@ using System.Text;
 using Asp.Versioning;
 using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Movies.Api;
@@ -110,7 +111,21 @@ var connectionString = databaseOptions.BuildConnectionString();
 builder.Services.AddApplication();
 builder.Services.AddDatabase(connectionString);
 
+// Behind Azure App Service, TLS terminates at the front end and the container is reached over
+// HTTP with the original scheme in X-Forwarded-Proto. Honour it so UseHttpsRedirection (and
+// generated URLs) see "https" rather than looping. The proxy IP isn't fixed, so the known
+// networks/proxies allow-lists are cleared.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Must run before UseHttpsRedirection/auth so downstream middleware sees the forwarded scheme.
+app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 

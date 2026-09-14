@@ -1,0 +1,21 @@
+# Identity.Api container image for Azure App Service (Web App for Containers).
+# Build from the repo root: `docker build -f Dockerfile.identity .`
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Restore layer (central package management). Identity.Api has no project references.
+COPY Directory.Packages.props ./
+COPY Identity.Api/Identity.Api.csproj Identity.Api/
+RUN dotnet restore Identity.Api/Identity.Api.csproj
+
+COPY . .
+RUN dotnet publish Identity.Api/Identity.Api.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+COPY --from=build /app ./
+
+# App Service routes to this port; also set WEBSITES_PORT=8080 on the Web App.
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Identity.Api.dll"]

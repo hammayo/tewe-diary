@@ -43,4 +43,20 @@ public class CacheEvictionEndpointTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("movies", factory.CacheStore.EvictedTags);
     }
+
+    [Fact]
+    public async Task Evict_still_works_behind_a_forwarded_proto_header()
+    {
+        // Simulates App Service terminating TLS: the container receives X-Forwarded-Proto=https.
+        // The ForwardedHeaders middleware must honour it without breaking routing or auth.
+        using var factory = new MoviesApiFactory();
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("x-api-key", MoviesApiFactory.TestApiKey);
+        client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+
+        var response = await client.PostAsync(EvictUrl, content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("movies", factory.CacheStore.EvictedTags);
+    }
 }
