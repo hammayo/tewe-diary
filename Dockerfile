@@ -17,9 +17,17 @@ RUN dotnet publish Movies.Api/Movies.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
+
+# curl is used by the container health check (the runtime image has no HTTP client otherwise).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app ./
 
 # App Service routes to this port; also set WEBSITES_PORT=8080 on the Web App.
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
+    CMD curl -fsS http://localhost:8080/_health || exit 1
 ENTRYPOINT ["dotnet", "Movies.Api.dll"]

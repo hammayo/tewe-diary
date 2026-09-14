@@ -14,3 +14,44 @@
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # `docker compose up` runs the whole stack (db + identity + movies). run.sh remains the
+  # dotnet-based dev loop and only starts the db service, so it is unaffected.
+  identity-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.identity
+    restart: unless-stopped
+    ports:
+      - '5003:8080'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development   # enables Swagger at /swagger
+      - JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+
+  movies-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '5001:8080'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development   # enables Swagger at /swagger
+      # Reach Postgres over the compose network, not localhost.
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - Database__SslMode=Disable            # local docker Postgres has no TLS
+      - Database__MigrateOnStartup=true      # apply migrations on boot for local runs
+      # Must match Identity.Api so issued tokens validate.
+      - JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - API_KEY=${API_KEY}

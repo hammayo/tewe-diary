@@ -1,5 +1,47 @@
 # CI/CD workflows
 
+## Running locally with Docker Compose
+
+The whole stack (Postgres + Identity.Api + Movies.Api) runs from `docker-compose.yml`:
+
+```bash
+cp .env.example .env      # first time: fill in real values (or keep the local defaults)
+./run.sh                  # or: docker compose up --build  (foreground; Ctrl+C stops)
+docker compose ps         # all three should report (healthy)
+docker compose down       # stop and remove
+```
+
+`./run.sh -d` starts detached; `./run.sh deps` starts only db + identity for host-debugging
+Movies.Api from the IDE.
+
+### Service URLs and ports
+
+Compose serves over **HTTP** (host port → container port `8080`):
+
+| Service        | Host URL                 | Swagger                       | Health                        | Notes                                      |
+|----------------|--------------------------|-------------------------------|-------------------------------|--------------------------------------------|
+| Movies.Api     | http://localhost:5001    | http://localhost:5001/swagger | http://localhost:5001/_health | Movie/rating API; JWT-protected writes     |
+| Identity.Api   | http://localhost:5003    | http://localhost:5003/swagger | http://localhost:5003/_health | JWT issuer; `POST /token`                  |
+| Postgres (db)  | localhost:5432           | —                             | (compose healthcheck)         | `postgres:latest`; credentials from `.env` |
+
+Movies migrates the database on boot (`Database__MigrateOnStartup=true`) and reaches Postgres
+over the compose network. Every service has a health check, so `docker compose ps` shows when
+each dependency is up; `movies-api` only reports healthy once it can reach the database.
+
+Get a token and call a protected endpoint:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:5003/token -H 'Content-Type: application/json' \
+  -d '{"userId":"11111111-1111-1111-1111-111111111111","email":"dev@example.com","customClaims":{"trusted_member":true}}')
+curl -X POST http://localhost:5001/api/movies -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"title":"Example","yearOfRelease":2024,"genres":["Drama"]}'
+```
+
+To run/debug Movies.Api on the host instead (HTTPS dev-cert ports from `.env`), start the
+dependencies with `./run.sh deps` and launch the project from the IDE or `dotnet run`.
+
+## Deployment (Azure)
+
 Two workflows target Azure App Service (Web App for Containers) + Azure Database for PostgreSQL
 Flexible Server.
 
