@@ -6,6 +6,7 @@
     <projectFile profileName="https">Identity.Api/Identity.Api.csproj</projectFile>
     <projectFile>Movies.Api.Sdk.Consumer/Movies.Api.Sdk.Consumer.csproj</projectFile>
     <projectFile profileName="https">Movies.Api/Movies.Api.csproj</projectFile>
+    <projectFile>Movies.DbTool/Movies.DbTool.csproj</projectFile>
   </component>
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
@@ -17,7 +18,14 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="" />
+    <list default="true" id="9270a16e-7ce8-4715-82d5-fd71390b3b5d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/_README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/deploy.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/import.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TeweRestApi.sln" beforeDir="false" afterPath="$PROJECT_DIR$/TeweRestApi.sln" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -27,7 +35,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="41" />
+    <option name="cachedIndexableFilesCount" value="44" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -40,6 +48,25 @@
   }
 }</component>
   <component name="GitToolBoxStore">
+    <option name="branchesCleanupHistory">
+      <BranchesCleanupHistory>
+        <option name="history">
+          <list>
+            <BranchCleanupEntry>
+              <option name="deletions">
+                <list>
+                  <BranchDeletion>
+                    <option name="hash" value="51953bf15db41fb09edb32f8c94c8c8755b2dd05" />
+                    <option name="name" value="feat-sdk" />
+                  </BranchDeletion>
+                </list>
+              </option>
+              <option name="timestamp" value="1789348582120" />
+            </BranchCleanupEntry>
+          </list>
+        </option>
+      </BranchesCleanupHistory>
+    </option>
     <option name="recentBranches">
       <RecentBranches>
         <option name="branchesForRepo">
@@ -48,12 +75,12 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="main" />
-                    <option name="lastUsedInstant" value="1789346661" />
+                    <option name="branchName" value="feat-phase-1-improvements" />
+                    <option name="lastUsedInstant" value="1789349381" />
                   </RecentBranch>
                   <RecentBranch>
-                    <option name="branchName" value="feat-sdk" />
-                    <option name="lastUsedInstant" value="1789336896" />
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1789346661" />
                   </RecentBranch>
                 </list>
               </option>
@@ -71,6 +98,7 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/.claude/settings.local.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/scripts/tests/fixtures/genre-map.json" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/scripts/tests/fixtures/tmdb-popular-sample.json" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -112,7 +140,7 @@
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "feat-phase-1-improvements",
     "junie.onboarding.icon.badge.shown": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -163,6 +191,27 @@
       <option name="RUNTIME_ARGUMENTS" value="" />
       <option name="AUTO_ATTACH_CHILDREN" value="0" />
       <option name="PROJECT_PATH" value="$PROJECT_DIR$/Movies.Api.Sdk.Consumer/Movies.Api.Sdk.Consumer.csproj" />
+      <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
+      <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
+      <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
+      <option name="PROJECT_KIND" value="DotNetCore" />
+      <option name="PROJECT_TFM" value="" />
+      <method v="2">
+        <option name="Build" />
+      </method>
+    </configuration>
+    <configuration name="Movies.DbTool" type="DotNetProject" factoryName=".NET Project">
+      <option name="EXE_PATH" value="" />
+      <option name="PROGRAM_PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
+      <option name="USE_MONO" value="0" />
+      <option name="RUNTIME_ARGUMENTS" value="" />
+      <option name="AUTO_ATTACH_CHILDREN" value="0" />
+      <option name="PROJECT_PATH" value="$PROJECT_DIR$/Movies.DbTool/Movies.DbTool.csproj" />
       <option name="PROJECT_EXE_PATH_TRACKING" value="1" />
       <option name="PROJECT_ARGUMENTS_TRACKING" value="1" />
       <option name="PROJECT_WORKING_DIRECTORY_TRACKING" value="1" />
@@ -224,6 +273,7 @@
       <workItem from="1788735752672" duration="31470000" />
       <workItem from="1789312406231" duration="9780000" />
       <workItem from="1789344240203" duration="2153000" />
+      <workItem from="1789346769391" duration="19321000" />
     </task>
     <servers />
   </component>

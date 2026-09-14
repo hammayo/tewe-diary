@@ -1,0 +1,78 @@
+name: Import TMDB
+
+# Ad-hoc (manually triggered) data refresh: fetch from TMDB → upsert import as the
+# least-privilege movies_importer role → evict the API's "movies" output cache. Safe to re-run;
+# the import is idempotent and never touches ratings or manual movies.
+#
+# Required GitHub configuration:
+#   secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID   (OIDC federated identity)
+#   vars:    RESOURCE_GROUP, WEBAPP_NAME, PG_SERVER_NAME, KEY_VAULT_NAME,
+#            IMPORTER_CONNECTION_SECRET, TMDB_API_KEY_SECRET, MOVIES_API_KEY_SECRET
+
+on:
+  workflow_dispatch:
+    inputs:
+      fetch_args:
+        description: 'Arguments passed to scripts/fetch-tmdb.sh'
+        required: false
+        default: '--list popular --pages 5'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch from TMDB
+        env:
+          FETCH_ARGS: ${{ inputs.fetch_args }}   # via env to avoid script injection
+        run: |
+          set -euo pipefail
+          TMDB_API_KEY="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
+                          --name "${{ vars.TMDB_API_KEY_SECRET }}" --query value -o tsv)"
+          export TMDB_API_KEY
+          chmod +x scripts/fetch-tmdb.sh
+          # Intentional word-splitting of the operator-supplied argument string.
+          scripts/fetch-tmdb.sh $FETCH_ARGS
+
+      - name: Import into database (movies_importer role)
+        env:
+          RULE_NAME: ghimport-${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          RUNNER_IP="$(curl -fsSL https://api.ipify.org)"
+          az postgres flexible-server firewall-rule create \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.PG_SERVER_NAME }}" \
+            --rule-name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP"
+          trap 'az postgres flexible-server firewall-rule delete -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.PG_SERVER_NAME }}" --rule-name "$RULE_NAME" --yes || true' EXIT
+
+          CS="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
+                --name "${{ vars.IMPORTER_CONNECTION_SECRET }}" --query value -o tsv)"
+          Database__ConnectionString="$CS" \
+            dotnet run --project Movies.DbTool -c Release -- import Resources/tmdb-movies.ndjson
+
+      - name: Evict movies cache
+        run: |
+          set -euo pipefail
+          API_KEY="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
+                     --name "${{ vars.MOVIES_API_KEY_SECRET }}" --query value -o tsv)"
+          curl -fsS -X POST "https://${{ vars.WEBAPP_NAME }}.azurewebsites.net/api/admin/cache/evict" \
+            -H "x-api-key: $API_KEY"

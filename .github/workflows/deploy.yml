@@ -1,0 +1,107 @@
+name: Deploy
+
+# Build → test → push image → migrate (DDL role) → deploy to staging slot → warm → swap.
+# Migrations run BEFORE the swap; keep them backward-compatible (expand/contract) so the old
+# image keeps serving until the swap instant.
+#
+# Required GitHub configuration:
+#   secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID   (OIDC federated identity)
+#   vars:    ACR_NAME, ACR_LOGIN_SERVER, RESOURCE_GROUP, WEBAPP_NAME, SLOT_NAME,
+#            PG_SERVER_NAME, KEY_VAULT_NAME, MIGRATION_CONNECTION_SECRET
+# Azure prerequisites (one-time):
+#   - Federated credential on the app registration for this repo/environment.
+#   - Web App (+ SLOT_NAME slot) is a Web App for Containers; managed identity has AcrPull on the
+#     ACR and get/list on the Key Vault; app setting WEBSITES_PORT=8080.
+#   - App settings: KeyVault:Uri, Database:SslMode=Require, Database:MigrateOnStartup=false.
+#   - Flexible Server uses public access; the OIDC identity can manage its firewall rules.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC login to Azure
+  contents: read
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
+      - run: dotnet test TeweRestApi.sln --configuration Release
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push image
+        run: |
+          set -euo pipefail
+          az acr login --name "${{ vars.ACR_NAME }}"
+          IMAGE="${{ vars.ACR_LOGIN_SERVER }}/movies-api:${GITHUB_SHA}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Migrate database
+        env:
+          RULE_NAME: ghdeploy-${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          RUNNER_IP="$(curl -fsSL https://api.ipify.org)"
+          az postgres flexible-server firewall-rule create \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.PG_SERVER_NAME }}" \
+            --rule-name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP"
+          trap 'az postgres flexible-server firewall-rule delete -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.PG_SERVER_NAME }}" --rule-name "$RULE_NAME" --yes || true' EXIT
+
+          CS="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
+                --name "${{ vars.MIGRATION_CONNECTION_SECRET }}" --query value -o tsv)"
+          Database__ConnectionString="$CS" dotnet run --project Movies.DbTool -c Release -- migrate
+
+      - name: Deploy image to staging slot
+        run: |
+          set -euo pipefail
+          az webapp config container set \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
+            --slot "${{ vars.SLOT_NAME }}" \
+            --container-image-name "$IMAGE" \
+            --container-registry-url "https://${{ vars.ACR_LOGIN_SERVER }}"
+
+      - name: Warm staging slot
+        run: |
+          set -euo pipefail
+          URL="https://${{ vars.WEBAPP_NAME }}-${{ vars.SLOT_NAME }}.azurewebsites.net/_health"
+          for i in $(seq 1 12); do
+            if curl -fsS "$URL"; then echo "healthy"; exit 0; fi
+            echo "waiting for slot ($i)..."; sleep 10
+          done
+          echo "Staging slot did not become healthy" >&2
+          exit 1
+
+      - name: Swap staging into production
+        run: |
+          az webapp deployment slot swap \
+            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
+            --slot "${{ vars.SLOT_NAME }}" --target-slot production
