@@ -24,4 +24,11 @@ public static class ApiEndpoints
 
         public const string GetUserRatings = $"{Base}/me";
     }
+
+    public static class Admin
+    {
+        private const string Base = $"{ApiBase}/admin";
+
+        public const string EvictCache = $"{Base}/cache/evict";
+    }
 }

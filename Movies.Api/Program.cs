@@ -187,3 +187,6 @@ static bool IsDatabaseUnavailable(Exception ex)
 
     return false;
 }
+
+// Exposed so the integration test host (WebApplicationFactory<Program>) can boot the app.
+public partial class Program;
