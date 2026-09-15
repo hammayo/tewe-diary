@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Movies.Api;
+namespace Movies.Api.Startup;
 
 // Fallback handler for anything not already translated to a response (e.g. by
 // ValidationMappingMiddleware). Logs the failure and returns an RFC-7807 body
