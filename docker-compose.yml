@@ -1,7 +1,11 @@
-﻿services:
+﻿# Pinned so the project/group name (and the pgdata volume) stay 'tewe-diary' regardless of folder.
+name: tewe-diary
+
+services:
 
   db:
     image: postgres:latest
+    container_name: tewe-db
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -24,6 +28,7 @@
     build:
       context: .
       dockerfile: Dockerfile.identity
+    container_name: tewe-identity-api
     restart: unless-stopped
     ports:
       - '5003:8080'   # HTTP
@@ -46,6 +51,7 @@
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: tewe-movies-api
     restart: unless-stopped
     depends_on:
       db:

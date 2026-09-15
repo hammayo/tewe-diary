@@ -23,6 +23,8 @@ CERT_FILE="$CERT_DIR/aspnet-dev.pfx"
 CERT_PASSWORD="$(grep -E '^ASPNETCORE_DEV_CERT_PASSWORD=' "$REPO_ROOT/.env" 2>/dev/null | cut -d= -f2- | tr -d '\r')"
 CERT_PASSWORD="${CERT_PASSWORD:-devcert}"
 
+clear
+
 if [[ ! -f "$CERT_FILE" ]]; then
   echo "Generating ASP.NET dev cert at .certs/aspnet-dev.pfx ..."
   mkdir -p "$CERT_DIR"

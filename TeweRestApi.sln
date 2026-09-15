@@ -23,6 +23,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.DbTool", "Movies.DbTool\Movies.DbTool.csproj", "{A9DC21A0-8CA8-4F06-A302-062A0045D8A3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DATA", "DATA", "{E57EFD00-4D09-422E-80A7-0E296309D318}"
+	ProjectSection(SolutionItems) = preProject
+		Resources\tmdb-movies.ndjson = Resources\tmdb-movies.ndjson
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{C0B1A132-506A-4F19-A67A-58C1E869FC9A}"
 	ProjectSection(SolutionItems) = preProject
@@ -35,6 +38,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{C0B1
 		scripts\import-movies.sql = scripts\import-movies.sql
 		scripts\fetch-tmdb.sh = scripts\fetch-tmdb.sh
 		scripts\import-transform.sql = scripts\import-transform.sql
+		scripts\load-movies.sh = scripts\load-movies.sh
+		scripts\stack-up.sh = scripts\stack-up.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Tests.Shared", "Movies.Tests.Shared\Movies.Tests.Shared.csproj", "{2887A89E-AE78-45B0-8518-AF5C10633291}"
