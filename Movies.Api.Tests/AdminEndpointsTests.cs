@@ -1,5 +1,4 @@
 using System.Net;
-using Microsoft.AspNetCore.OutputCaching;
 using NSubstitute;
 
 namespace Movies.Api.Tests;

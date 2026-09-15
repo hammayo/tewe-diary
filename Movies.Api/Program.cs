@@ -14,7 +14,6 @@ using Movies.Api.Swagger;
 using Movies.Application;
 using Movies.Application.Database;
 using Movies.Application.Database.Migrations;
-using Npgsql;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 // Load the repo-root .env (walking up from the working directory) so DB credentials

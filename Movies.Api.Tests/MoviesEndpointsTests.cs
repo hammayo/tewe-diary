@@ -3,7 +3,6 @@ using Movies.Contracts.Requests;
 using Movies.Contracts.Responses;
 using Movies.Tests.Shared;
 using NSubstitute;
-using Microsoft.AspNetCore.OutputCaching;
 
 namespace Movies.Api.Tests;
 
