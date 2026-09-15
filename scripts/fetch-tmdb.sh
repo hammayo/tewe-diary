@@ -3,13 +3,15 @@
 # Fetches TMDB movies into NDJSON (one movie per line).
 #
 # Modes (mutually exclusive):
-#   List (default):  --list popular|top_rated|now_playing            -> /movie/{list}
-#   Discover:        any of --year/--genre/--original-language/      -> /discover/movie
-#                    --sort/--min-rating/--min-votes
-#   Trending:        --trending [day|week]  (top 10)                 -> /trending/movie/{window}
+#   Discover (default): no args, or any of --year/--genre/--original-language/   -> /discover/movie
+#                       --sort/--min-rating/--min-votes. A bare run defaults to
+#                       --sort primary_release_date.desc --pages 500 (min-rating 6.5, min-votes 50).
+#   List:               --list popular|top_rated|now_playing                     -> /movie/{list}
+#   Trending:           --trending [day|week]  (top 10)                          -> /trending/movie/{window}
 #
 # Usage:
-#   scripts/fetch-tmdb.sh [--list popular|top_rated|now_playing] [--pages N] [--out PATH]
+#   scripts/fetch-tmdb.sh [--pages N] [--out PATH]      # default: discover, newest first
+#   scripts/fetch-tmdb.sh --list popular|top_rated|now_playing [--pages N] [--out PATH]
 #   scripts/fetch-tmdb.sh --year 2024 [--genre "Action,Comedy"] [--original-language en] \
 #                         [--sort primary_release_date.desc] [--min-rating 6.5] \
 #                         [--min-votes 50] [--pages N] [--out PATH]
@@ -20,7 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LIST=""
-PAGES=5
+PAGES=600
 OUT="$ROOT_DIR/Resources/tmdb-movies.ndjson"
 YEAR=""
 GENRE=""
@@ -77,8 +79,13 @@ elif [ "$discover_requested" = true ]; then
   fi
   MODE="discover"
 else
-  MODE="list"
-  LIST="${LIST:-popular}"
+  # No --trending and no discover filters. Use --list if it was given, otherwise
+  # default to a broad discover run (SORT/MIN_* defaults applied in the discover case).
+  if [ -n "$LIST" ]; then
+    MODE="list"
+  else
+    MODE="discover"
+  fi
 fi
 
 # Load .env if present so TMDB_API_KEY is available for local runs.

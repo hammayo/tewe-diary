@@ -9,6 +9,9 @@
       - POSTGRES_DB=${POSTGRES_DB}
     ports:
       - '${POSTGRES_PORT}:5432'
+    volumes:
+      # Persist data across `docker compose down`/`up` (removed only by `down -v`).
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 5s
@@ -23,9 +26,18 @@
       dockerfile: Dockerfile.identity
     restart: unless-stopped
     ports:
-      - '5003:8080'
+      - '5003:8080'   # HTTP
+      - '7003:8081'   # HTTPS
+    volumes:
+      - ./.certs:/https:ro   # ASP.NET dev cert (see scripts/stack-up.sh)
     environment:
       - ASPNETCORE_ENVIRONMENT=Development   # enables Swagger at /swagger
+      # Add an HTTPS listener on 8081 alongside the HTTP one on 8080.
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnet-dev.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_DEV_CERT_PASSWORD}
+      # Redirect http->https to the host-mapped HTTPS port (7003), not the container's 8081.
+      - HTTPS_PORT=7003
       - JWT_TOKEN_SECRET=${JWT_TOKEN_SECRET}
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}
@@ -39,9 +51,18 @@
       db:
         condition: service_healthy
     ports:
-      - '5001:8080'
+      - '5001:8080'   # HTTP
+      - '7001:8081'   # HTTPS
+    volumes:
+      - ./.certs:/https:ro   # ASP.NET dev cert (see scripts/stack-up.sh)
     environment:
       - ASPNETCORE_ENVIRONMENT=Development   # enables Swagger at /swagger
+      # Add an HTTPS listener on 8081 alongside the HTTP one on 8080.
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnet-dev.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_DEV_CERT_PASSWORD}
+      # Redirect http->https to the host-mapped HTTPS port (7001), not the container's 8081.
+      - HTTPS_PORT=7001
       # Reach Postgres over the compose network, not localhost.
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
@@ -55,3 +76,6 @@
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}
       - API_KEY=${API_KEY}
+
+volumes:
+  pgdata:

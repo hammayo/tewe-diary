@@ -75,6 +75,7 @@ secrets.json
 appsettings.*.local.json
 *.pfx
 *.publishsettings
+.certs/
 
 ## OS
 .DS_Store
