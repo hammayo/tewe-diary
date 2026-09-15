@@ -2,6 +2,7 @@ using Dapper;
 using Movies.Application.Database;
 using Movies.Application.Database.Import;
 using Movies.Application.Database.Migrations;
+using Movies.Tests.Shared;
 
 namespace Movies.Application.Tests;
 

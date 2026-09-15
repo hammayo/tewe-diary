@@ -53,3 +53,6 @@ app.MapControllers();
 app.MapHealthChecks("_health");
 
 app.Run();
+
+// Exposed so the integration test host (WebApplicationFactory<Program>) can boot the app.
+public partial class Program;

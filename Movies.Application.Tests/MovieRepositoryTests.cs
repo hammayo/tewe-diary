@@ -1,8 +1,7 @@
-using Dapper;
 using Movies.Application.Database;
-using Movies.Application.Database.Migrations;
 using Movies.Application.Models;
 using Movies.Application.Repositories;
+using Movies.Tests.Shared;
 
 namespace Movies.Application.Tests;
 
@@ -18,13 +17,8 @@ public class MovieRepositoryTests
     {
         // Regression for the get-all 500: a movie with no genres makes string_agg return
         // NULL, which the dynamic mapping must tolerate rather than calling .Split on null.
+        await _fx.ResetAsync();
         var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
-        MigrationRunner.Run(_fx.ConnectionString);
-        using (var connection = await factory.CreateConnectionAsync())
-        {
-            await connection.ExecuteAsync("truncate movie_metadata, genres, ratings, movies cascade;");
-        }
-
         var repository = new MovieRepository(factory);
         await repository.CreateAsync(new Movie
         {

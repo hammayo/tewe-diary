@@ -66,13 +66,15 @@ public static class ContractMapping
     
     public static GetAllMoviesOptions MapToOptions(this GetAllMoviesRequest request)
     {
+        // Default to newest-first when no sort is supplied.
+        const string defaultSortBy = "-yearOfRelease";
+        var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? defaultSortBy : request.SortBy;
         return new GetAllMoviesOptions
         {
             Title = request.Title,
             YearOfRelease = request.Year,
-            SortField = request.SortBy?.Trim('+', '-'),
-            SortOrder = request.SortBy is null ? SortOrder.Unsorted :
-                request.SortBy.StartsWith('-') ? SortOrder.Descending : SortOrder.Ascending,
+            SortField = sortBy.Trim('+', '-'),
+            SortOrder = sortBy.StartsWith('-') ? SortOrder.Descending : SortOrder.Ascending,
             Page = request.Page.GetValueOrDefault(PagedRequest.DefaultPage),
             PageSize = request.PageSize.GetValueOrDefault(PagedRequest.DefaultPageSize)
         };
