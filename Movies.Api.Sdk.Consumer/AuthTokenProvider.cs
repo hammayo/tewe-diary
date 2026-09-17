@@ -23,9 +23,7 @@ public class AuthTokenProvider
         if (!string.IsNullOrEmpty(_cachedToken))
         {
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(_cachedToken);
-            var expiryTimeText = jwt.Claims.Single(claim => claim.Type == "exp").Value;
-            var expiryDateTime = UnixTimeStampToDateTime(int.Parse(expiryTimeText));
-            if (expiryDateTime > DateTime.UtcNow)
+            if (jwt.ValidTo > DateTime.UtcNow)
             {
                 return _cachedToken;
             }
@@ -46,13 +44,6 @@ public class AuthTokenProvider
         _cachedToken = newToken;
         Lock.Release();
         return newToken;
-    }
-    
-    private static DateTime UnixTimeStampToDateTime(int unixTimeStamp)
-    {
-        var dateTime = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-        return dateTime;
     }
 }
 
