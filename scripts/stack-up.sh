@@ -39,7 +39,7 @@ printf '  Movies.Api:    http://localhost:5001/swagger  |  https://localhost:700
 printf '  Identity.Api:  http://localhost:5003/swagger  |  https://localhost:7003/swagger\n'
 
 # Movies data: current row count (same query as MovieRepository.GetCountAsync) plus
-# a pointer to the loader. Retry briefly in case migrations are still running on boot.
+# pointers to the fetch + load scripts. Retry briefly in case migrations are still running on boot.
 printf '\nMovies data:\n'
 movie_count=""
 for _ in $(seq 1 10); do
@@ -51,11 +51,17 @@ done
 if [[ "$movie_count" =~ ^[0-9]+$ ]]; then
   printf '  Rows in movies table: %s\n' "$movie_count"
   if [[ "$movie_count" -eq 0 ]]; then
-    printf '  -> Table is empty. Load sample data:  scripts/load-movies.sh\n'
+    printf '  -> Table is empty. Populate it:\n'
+    printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
+    printf '     2) Load into db:     scripts/load-movies.sh\n'
   else
-    printf '  (Re)load sample data:  scripts/load-movies.sh\n'
+    printf '  (Re)populate sample data:\n'
+    printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
+    printf '     2) Load into db:     scripts/load-movies.sh\n'
   fi
 else
   printf '  Rows in movies table: unavailable (db starting or migrations pending)\n'
-  printf '  Load sample data:  scripts/load-movies.sh\n'
+  printf '  Populate sample data:\n'
+  printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
+  printf '     2) Load into db:     scripts/load-movies.sh\n'
 fi
