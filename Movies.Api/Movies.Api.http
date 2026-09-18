@@ -13,7 +13,7 @@ Content-Type: application/json
 
 {
   "userid": "d8566de3-b1a6-4a9b-b842-8e3887a82e41",
-  "email": "dev@tewe.local",
+  "email": "ada.lovelace@tewe.local",
   "customClaims": {
     "admin": true,
     "trusted_member": true
@@ -30,7 +30,7 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Nick the Greek",
+  "title": "Synergized Zero-Latency Standardization",
   "yearOfRelease": 2023,
   "genres": [ "Comedy" ]
 }
@@ -52,7 +52,7 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Nick the Greek",
+  "title": "Synergized Zero-Latency Standardization",
   "yearOfRelease": 2023,
   "genres": [ "Comedy", "Action" ]
 }

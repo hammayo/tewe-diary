@@ -1,5 +1,6 @@
 ﻿
 using System.Text.Json;
+using Bogus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Movies.Api.Sdk;
@@ -35,20 +36,22 @@ var provider = services.BuildServiceProvider();
 
 var moviesApi = provider.GetRequiredService<IMoviesApi>();
 
-var movie = await moviesApi.GetMovieAsync("star-wars-1977");
+// Bogus-generated sample movie so the demo doesn't depend on any seeded data.
+var movieFaker = new Faker<CreateMovieRequest>()
+    .RuleFor(m => m.Title, f => f.Company.CatchPhrase())
+    .RuleFor(m => m.YearOfRelease, f => f.Random.Int(1950, DateTime.UtcNow.Year))
+    .RuleFor(m => m.Genres, f => f.Make(f.Random.Int(1, 3), () => f.Music.Genre()).Distinct().ToList());
 
-var newMovie = await moviesApi.CreateMovieAsync(new CreateMovieRequest
-{
-    Title = "Spiderman 2",
-    YearOfRelease = 2002,
-    Genres = new []{ "Action"}
-});
+var newMovie = await moviesApi.CreateMovieAsync(movieFaker.Generate());
 
-await moviesApi.UpdateMovieAsync(newMovie.Id, new UpdateMovieRequest()
+// Read it back via the slug the API generated for it.
+var movie = await moviesApi.GetMovieAsync(newMovie.Slug);
+
+await moviesApi.UpdateMovieAsync(newMovie.Id, new UpdateMovieRequest
 {
-    Title = "Spiderman 2",
-    YearOfRelease = 2002,
-    Genres = new []{ "Action", "Adventure"}
+    Title = movie.Title,
+    YearOfRelease = movie.YearOfRelease,
+    Genres = movie.Genres.Append(new Faker().Music.Genre()).Distinct()
 });
 
 await moviesApi.DeleteMovieAsync(newMovie.Id);
