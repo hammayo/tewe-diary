@@ -4,6 +4,34 @@ Populate `movies`, `genres`, and `movie_metadata` from TMDB. The `ratings`
 table is never touched. Imports are idempotent (deduped on `tmdb_id`), so
 re-running only adds movies not already imported.
 
+## Pipeline overview
+
+The dataset is generated, not committed (`Data/` is gitignored). The **same SQL
+transform** is the single source of truth — embedded in `Movies.Application` for the
+CLI path and shared with the psql ops path (see [design-decisions.md](design-decisions.md#4-the-import-transform-is-embedded-shared-with-the-ops-path)).
+
+```
+TMDB API ──fetch-tmdb.sh (curl + jq)──▶ Data/tmdb-movies.ndjson
+                                              │
+                    ┌─────────────────────────┴─────────────────────────┐
+                    ▼                                                   ▼
+         load-movies.sh (psql COPY into                       Movies.DbTool import
+         staging → helpers/import-transform.sql)              (embedded transform)
+                    └─────────────────────────┬─────────────────────────┘
+                                              ▼
+                                     movies + genres (upsert by id,
+                                     slug-collision-safe)
+```
+
+```bash
+bash scripts/fetch-tmdb.sh                 # writes Data/tmdb-movies.ndjson (needs a TMDB API key)
+bash scripts/load-movies.sh                # loads it into the running Docker db via psql
+# or, via the CLI tool:
+dotnet run --project Ops.Tools/Movies.DbTool -- import Data/tmdb-movies.ndjson
+# schema migrations (same CLI):
+dotnet run --project Ops.Tools/Movies.DbTool -- migrate
+```
+
 ## 1. Configure
 
 Add your TMDB credentials to `.env` (gitignored):

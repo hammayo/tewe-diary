@@ -1,73 +1,75 @@
 # TeweRestApi
 
-A layered .NET 9 Movies REST API with a separate Identity token service. Movies
-and ratings are exposed through a versioned API with JWT-protected writes; a Refit
-SDK and an example consumer show how to call it.
+A production-shaped **.NET 9 REST API** for movies and ratings — a backend portfolio
+piece that shows decisions an engineer I make end to end: clean layering, versioned
+REST design, JWT + policy-based authorization, output caching, validation, Dapper/Postgres
+with versioned migrations, a generated client SDK, a containerised local stack, a data
+pipeline, and a full build → test → migrate → deploy path to Azure.
 
-## Project map
+> The goal isn't feature count — it's **where boundaries go, how auth is modelled, how the
+> data layer stays testable and how the whole thing ships.**
 
-| Project                 | Path                           | Responsibility                                                                               |
-|-------------------------|--------------------------------|----------------------------------------------------------------------------------------------|
-| Movies.Contracts        | `Movies.Contracts/`            | Request/response DTOs (leaf — no project dependencies)                                       |
-| Movies.Application      | `Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import |
-| Movies.Api              | `Movies.Api/`                  | Web API — controllers, contract mapping, auth, Swagger, health                               |
-| Identity.Api            | `Identity.Api/`                | Issues JWTs the Movies API validates                                                         |
-| Movies.Api.Sdk          | `Sdk/Movies.Api.Sdk/`          | Refit client SDK (references Contracts)                                                      |
-| Movies.Api.Sdk.Consumer | `Sdk/Movies.Api.Sdk.Consumer/` | Example console consumer of the SDK                                                          |
-| Movies.DbTool           | `Ops.Tools/Movies.DbTool/`     | CLI: `migrate` and `import <ndjson>`                                                         |
-| Tests                   | `Tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
+## What it demonstrates
 
-Supporting folders: `scripts/` (dev/ops shell scripts + SQL/jq helpers under
-`scripts/helpers/`), `Ops.Tools/Postman/` (Postman collection + environment),
-`Data/` (generated TMDB ndjson — gitignored), `_docs/` (notes).
+| Area                 | Practice shown                                                                                                                    |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| **API design**       | Resource-oriented routes, correct verbs + status codes, URL-segment **API versioning**, pagination, id-or-slug lookup             |
+| **Architecture**     | Clean/layered design with an enforced inward **dependency rule**; DTO ↔ domain mapping isolated at the edge                       |
+| **Security**         | JWT bearer auth from a **separate Identity service**; **policy-based** authorization (`Admin`, `Trusted`); API-key filter for ops |
+| **Performance**      | Response **output caching** with **tag-based eviction** on writes                                                                 |
+| **Data**             | **Dapper** over **PostgreSQL**; **FluentMigrator** versioned migrations; schema owned by migrations                               |
+| **Testing**          | xUnit unit + **integration tests** against a real Postgres (Testcontainers), AAA style, `Bogus` data                              |
+| **Tooling / DevOps** | Dockerised stack, a **CLI** for `migrate`/`import`, TMDB pipeline, **GitHub Actions** CI/CD with Azure Key Vault                  |
 
-## Architecture
+## System at a glance
 
-The dependency rule points inward: `Movies.Contracts` is a leaf, `Movies.Application`
-depends on no other project in the solution, and everything else depends on those.
-DTO mapping stays in `Movies.Api/Mapping/` so the core never references the API contracts.
-
-`Movies.Application` bundles domain + application + infrastructure in one project —
-a deliberate choice at this size. The folders map 1:1 to a future split if a second
-data store ever warrants it:
-
-| Folder                       | Layer          | Concern                          |
-|------------------------------|----------------|----------------------------------|
-| `Models/`                    | Domain         | Entities, value objects          |
-| `Services/`, `Validators/`   | Application    | Use cases, orchestration         |
-| `Repositories/`, `Database/` | Infrastructure | Dapper / Npgsql / FluentMigrator |
-
-## Running
-
-**Full stack (API + Identity + Postgres):**
-- Rider: run the `Full Stack` or `Docker Stack` configuration under `.run/`.
-- Shell: `bash scripts/stack-up.sh` (builds and starts the Docker stack, then prints URLs).
-
-**Auth flow:** request a JWT from `Identity.Api` (`POST /token`), then call the
-Movies API with `Authorization: Bearer <token>` for protected writes.
-
-## Tests
-
-```bash
-dotnet test TeweRestApi.sln
+```
+                  ┌─────────────────────────────────────┐
+                  │              API client             │
+                  │   (SPA / Refit SDK / Postman)       │
+                  └─────────┬───────────────────┬───────┘
+            1. POST /token  │                   │ 3. GET/POST/PUT/DELETE
+               (credentials)│                   │    Authorization: Bearer <JWT>
+                            ▼                   ▼
+                 ┌────────────────┐          ┌────────────────────────────────┐
+                 │ Identity.Api   │  2. JWT  │          Movies.Api            │
+                 │  issues JWT    │─────────▶│  versioning · authz · caching  │
+                 │                │  (shared │  validation · Swagger · health │
+                 └────────────────┘  secret) └───────────────┬────────────────┘
+                                                             │ Dapper
+                                                             ▼
+                                                    ┌──────────────────┐
+                                                    │    PostgreSQL    │
+                                                    │ (migrations own  │
+                                                    │  the schema)     │
+                                                    └──────────────────┘
 ```
 
-Integration suites (`Movies.Api.Tests`, `Movies.Application.Tests`) use a Postgres
-fixture and need Docker running. The transform fixture check is a plain script:
+## Quickstart
 
 ```bash
-bash scripts/tests/test_tmdb_transform.sh
+cp .env.example .env          # fill in real values (see Getting started)
+bash scripts/stack-up.sh      # build + start Movies API, Identity, Postgres
+# Movies API → https://localhost:7001  (Swagger at /swagger)
 ```
 
-## Regenerating TMDB data
+Full setup, config, ports, and a token-and-create-a-movie `curl` walkthrough are in
+[Getting started](_docs/_getting-started.md).
 
-The movie dataset is generated, not committed (`Data/` is gitignored).
+## Documentation
 
-```bash
-bash scripts/fetch-tmdb.sh                 # writes Data/tmdb-movies.ndjson (needs a TMDB API key)
-bash scripts/load-movies.sh                # loads it into the running Docker db via psql
-# or, via the CLI tool:
-dotnet run --project Ops.Tools/Movies.DbTool -- import Data/tmdb-movies.ndjson
-```
+| Doc                                                   | What's in it                                                             |
+|-------------------------------------------------------|--------------------------------------------------------------------------|
+| [Getting started](_docs/_getting-started.md)          | Prerequisites, `.env` config, ports/URLs, run, quickstart `curl`         |
+| [Architecture](_docs/architecture.md)                 | Dependency rule, layering, request pipeline, project map                 |
+| [API reference](_docs/api.md)                         | Endpoints, authorization tiers, query params, error contract, versioning |
+| [Design decisions & notes](_docs/design-decisions.md) | The deliberate trade-offs and when to revisit them                       |
+| [Testing](_docs/testing.md)                           | Unit + Testcontainers integration strategy and conventions               |
+| [CI/CD & deployment](_docs/ci-cd.md)                  | Build→test→migrate→deploy, Key Vault, DB role separation                 |
+| [TMDB import runbook](_docs/tmdb-import.md)           | Data pipeline: fetch → transform → load                                  |
 
-`Ops.Tools/Movies.DbTool` also runs schema migrations: `dotnet run --project Ops.Tools/Movies.DbTool -- migrate`.
+## Roadmap
+
+- **Minimal API v2** — a parallel `v2` surface built with **.NET Minimal APIs** will land in
+  a dedicated **feature branch**, running side by side with the v1 controllers (URL-segment
+  versioning already supports it); the SDK will grow a v2 client alongside it.
