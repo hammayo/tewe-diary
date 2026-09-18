@@ -106,6 +106,6 @@ No extra Web App configuration is required for this; just don't strip the `X-For
 
 ## Database roles
 
-Create the least-privilege import role once (see `scripts/create-importer-role.sql`). Use a
+Create the least-privilege import role once (see `scripts/helpers/create-importer-role.sql`). Use a
 DDL-capable role for `MIGRATION_CONNECTION_SECRET`, the `movies_importer` role for
 `IMPORTER_CONNECTION_SECRET`, and a DML-only role for the app's runtime connection string.

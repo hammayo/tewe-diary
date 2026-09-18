@@ -4,7 +4,7 @@
 -- excluded: the importer never touches them.
 --
 -- Run with an admin role, substituting the database name and a real password:
---   psql -v dbname=movies -v importer_password='...' -f scripts/create-importer-role.sql
+--   psql -v dbname=movies -v importer_password='...' -f scripts/helpers/create-importer-role.sql
 --
 -- On Azure Database for PostgreSQL Flexible Server, create the login role via the portal /
 -- azure_pg_admin if direct CREATE ROLE is restricted, then run the GRANTs below.

@@ -19,9 +19,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Single source of truth: the import transform lives in scripts/ and is embedded so the
+      <!-- Single source of truth: the import transform lives in scripts/helpers/ and is embedded so the
            MovieImporter runs the exact same SQL as the psql-based ops path. -->
-      <EmbeddedResource Include="..\scripts\import-transform.sql">
+      <EmbeddedResource Include="..\scripts\helpers\import-transform.sql">
         <LogicalName>Movies.Application.import-transform.sql</LogicalName>
       </EmbeddedResource>
     </ItemGroup>

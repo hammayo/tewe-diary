@@ -87,7 +87,7 @@ jobs:
 
           CS="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
                 --name "${{ vars.MIGRATION_CONNECTION_SECRET }}" --query value -o tsv)"
-          Database__ConnectionString="$CS" dotnet run --project Movies.DbTool -c Release -- migrate
+          Database__ConnectionString="$CS" dotnet run --project Ops.Tools/Movies.DbTool -c Release -- migrate
 
       - name: Deploy images to staging slots
         run: |

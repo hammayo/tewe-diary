@@ -5,19 +5,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Shared test-support library, not itself a runnable test project. -->
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Bogus" />
-    <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Dapper" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Npgsql" />
-    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Movies.Api\Movies.Api.csproj" />
-    <ProjectReference Include="..\Movies.Tests.Shared\Movies.Tests.Shared.csproj" />
+    <ProjectReference Include="..\..\Movies.Application\Movies.Application.csproj" />
+    <ProjectReference Include="..\..\Movies.Contracts\Movies.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

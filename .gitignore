@@ -1,6 +1,12 @@
 ## Local secrets / environment
 .env
 
+## Working docs (PRD plans/specs docs) excluded from git for now
+_task/
+
+## Generated data output
+Data/*.ndjson
+
 ## .NET build output
 [Bb]in/
 [Oo]bj/

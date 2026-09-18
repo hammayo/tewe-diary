@@ -32,7 +32,7 @@ if [[ ! -f "$CERT_FILE" ]]; then
   echo "Tip: run 'dotnet dev-certs https --trust' once to avoid browser warnings on the https URLs."
 fi
 
-docker compose -f "$REPO_ROOT/docker-compose.yml" up -d --build
+docker compose -f "$REPO_ROOT/docker-compose.yml" up -d --build --remove-orphans
 
 printf '\nSwagger UIs:\n'
 printf '  Movies.Api:    http://localhost:5001/swagger  |  https://localhost:7001/swagger\n'

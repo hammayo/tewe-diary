@@ -22,8 +22,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LIST=""
-PAGES=600
-OUT="$ROOT_DIR/Resources/tmdb-movies.ndjson"
+PAGES=500  # TMDB caps discover/list at page 500; requesting more returns HTTP 400
+OUT="$ROOT_DIR/Data/tmdb-movies.ndjson"
 YEAR=""
 GENRE=""
 ORIG_LANG=""
@@ -52,6 +52,13 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+# TMDB's discover/list endpoints return HTTP 400 beyond page 500. Clamp so an
+# explicit --pages over the cap can't crash the run mid-fetch.
+if [ "$PAGES" -gt 500 ]; then
+  echo "Note: --pages $PAGES exceeds TMDB's max of 500; clamping to 500." >&2
+  PAGES=500
+fi
 
 # Which mode do the flags request? Discover is triggered by any content/quality filter.
 discover_requested=false
@@ -136,7 +143,7 @@ if [ -n "$GENRE" ]; then
 fi
 
 # Transform a TMDB list response (stdin) into NDJSON on stdout.
-emit() { jq -c --argjson genres "$GENRE_MAP" -f "$SCRIPT_DIR/tmdb-to-ndjson.jq"; }
+emit() { jq -c --argjson genres "$GENRE_MAP" -f "$SCRIPT_DIR/helpers/tmdb-to-ndjson.jq"; }
 
 mkdir -p "$(dirname "$OUT")"
 : > "$OUT"
@@ -144,8 +151,10 @@ mkdir -p "$(dirname "$OUT")"
 case "$MODE" in
   list)
     for ((page=1; page<=PAGES; page++)); do
+      printf '\rFetching %s: page %d/%d (%d movies)' "$LIST" "$page" "$PAGES" "$(wc -l < "$OUT")" >&2
       curl -fsSL "${AUTH[@]}" "$API/movie/$LIST?language=en-US&page=$page${KEY_QS}" | emit >> "$OUT"
     done
+    printf '\n' >&2
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (list=$LIST, pages=$PAGES)"
     ;;
   discover)
@@ -153,6 +162,7 @@ case "$MODE" in
     MIN_RATING="${MIN_RATING:-6.5}"
     MIN_VOTES="${MIN_VOTES:-50}"
     for ((page=1; page<=PAGES; page++)); do
+      printf '\rFetching: page %d/%d (%d movies)' "$page" "$PAGES" "$(wc -l < "$OUT")" >&2
       url="$API/discover/movie?language=en-US&include_adult=false&sort_by=$SORT&page=$page"
       url="$url&vote_average.gte=$MIN_RATING&vote_count.gte=$MIN_VOTES"
       [ -n "$YEAR" ]        && url="$url&primary_release_year=$YEAR"
@@ -161,11 +171,13 @@ case "$MODE" in
       url="$url$KEY_QS"
       curl -fsSL "${AUTH[@]}" "$url" | emit >> "$OUT"
     done
+    printf '\n' >&2
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (discover: year=${YEAR:-any}, genre=${GENRE:-any}, lang=${ORIG_LANG:-any}, sort=$SORT, min-rating=$MIN_RATING, min-votes=$MIN_VOTES, pages=$PAGES)"
     ;;
   trending)
     # /trending returns results already sorted by trend; take the top 10.
     # Filter to a temp file first so closing the pipe early can't SIGPIPE curl/jq under pipefail.
+    printf 'Fetching trending (%s)...\n' "$TRENDING" >&2
     tmp="$(mktemp)"
     curl -fsSL "${AUTH[@]}" "$API/trending/movie/$TRENDING?language=en-US${KEY_QS}" | emit > "$tmp"
     head -n 10 "$tmp" > "$OUT"

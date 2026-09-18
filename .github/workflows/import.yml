@@ -67,7 +67,7 @@ jobs:
           CS="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
                 --name "${{ vars.IMPORTER_CONNECTION_SECRET }}" --query value -o tsv)"
           Database__ConnectionString="$CS" \
-            dotnet run --project Movies.DbTool -c Release -- import Resources/tmdb-movies.ndjson
+            dotnet run --project Ops.Tools/Movies.DbTool -c Release -- import Data/tmdb-movies.ndjson
 
       - name: Evict movies cache
         run: |

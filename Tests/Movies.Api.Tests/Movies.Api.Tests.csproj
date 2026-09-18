@@ -8,10 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bogus" />
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
@@ -21,7 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Identity.Api\Identity.Api.csproj" />
+    <ProjectReference Include="..\..\Movies.Api\Movies.Api.csproj" />
+    <ProjectReference Include="..\Movies.Tests.Shared\Movies.Tests.Shared.csproj" />
   </ItemGroup>
 
 </Project>

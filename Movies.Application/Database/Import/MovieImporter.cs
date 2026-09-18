@@ -8,7 +8,7 @@ namespace Movies.Application.Database.Import;
 // touched, and movies without a movie_metadata row (manual / API-created) are left alone.
 public class MovieImporter
 {
-    // Embedded copy of scripts/import-transform.sql (see Movies.Application.csproj).
+    // Embedded copy of scripts/helpers/import-transform.sql (see Movies.Application.csproj).
     private static readonly string TransformSql = LoadTransformSql();
 
     private readonly IDbConnectionFactory _connectionFactory;

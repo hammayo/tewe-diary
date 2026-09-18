@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Movies.Application\Movies.Application.csproj" />
+    <ProjectReference Include="..\..\Movies.Application\Movies.Application.csproj" />
     <ProjectReference Include="..\Movies.Tests.Shared\Movies.Tests.Shared.csproj" />
   </ItemGroup>
 

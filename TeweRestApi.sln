@@ -8,43 +8,40 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api", "Movies.Api\Mo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Api", "Identity.Api\Identity.Api.csproj", "{2956094D-093C-4241-B11E-0D5263E0FC66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Application.Tests", "Movies.Application.Tests\Movies.Application.Tests.csproj", "{A26E0ADE-B624-4D65-B2FF-0A085EF759A8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Application.Tests", "Tests\Movies.Application.Tests\Movies.Application.Tests.csproj", "{A26E0ADE-B624-4D65-B2FF-0A085EF759A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Sdk", "Movies.Api.Sdk\Movies.Api.Sdk.csproj", "{C37A1E7D-11BC-4DE7-8906-7A8F93E458DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Sdk", "Sdk\Movies.Api.Sdk\Movies.Api.Sdk.csproj", "{C37A1E7D-11BC-4DE7-8906-7A8F93E458DC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Sdk.Consumer", "Movies.Api.Sdk.Consumer\Movies.Api.Sdk.Consumer.csproj", "{C8C04E11-2FE0-4839-A1E1-01EA88E3D4F4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Sdk.Consumer", "Sdk\Movies.Api.Sdk.Consumer\Movies.Api.Sdk.Consumer.csproj", "{C8C04E11-2FE0-4839-A1E1-01EA88E3D4F4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SDK", "SDK", "{963A73FE-D486-4A92-BC7A-2838B278F80D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IAM", "IAM", "{CB749BE1-E0DC-4F03-A751-C84914846967}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Tests", "Movies.Api.Tests\Movies.Api.Tests.csproj", "{A4731E4F-E5F6-411A-9351-4FF9C5EE9906}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Api.Tests", "Tests\Movies.Api.Tests\Movies.Api.Tests.csproj", "{A4731E4F-E5F6-411A-9351-4FF9C5EE9906}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.DbTool", "Movies.DbTool\Movies.DbTool.csproj", "{A9DC21A0-8CA8-4F06-A302-062A0045D8A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.DbTool", "Ops.Tools\Movies.DbTool\Movies.DbTool.csproj", "{A9DC21A0-8CA8-4F06-A302-062A0045D8A3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DATA", "DATA", "{E57EFD00-4D09-422E-80A7-0E296309D318}"
-	ProjectSection(SolutionItems) = preProject
-		Resources\tmdb-movies.ndjson = Resources\tmdb-movies.ndjson
-	EndProjectSection
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ops.Tools", "Ops.Tools", "{E57EFD00-4D09-422E-80A7-0E296309D318}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{C0B1A132-506A-4F19-A67A-58C1E869FC9A}"
 	ProjectSection(SolutionItems) = preProject
-		scripts\tmdb-to-ndjson.jq = scripts\tmdb-to-ndjson.jq
-		scripts\create-importer-role.sql = scripts\create-importer-role.sql
+		scripts\helpers\tmdb-to-ndjson.jq = scripts\helpers\tmdb-to-ndjson.jq
+		scripts\helpers\create-importer-role.sql = scripts\helpers\create-importer-role.sql
 		scripts\tests\test_tmdb_transform.sh = scripts\tests\test_tmdb_transform.sh
 		scripts\tests\fixtures\expected.ndjson = scripts\tests\fixtures\expected.ndjson
 		scripts\tests\fixtures\tmdb-popular-sample.json = scripts\tests\fixtures\tmdb-popular-sample.json
 		scripts\tests\fixtures\genre-map.json = scripts\tests\fixtures\genre-map.json
-		scripts\import-movies.sql = scripts\import-movies.sql
+		scripts\helpers\import-movies.sql = scripts\helpers\import-movies.sql
 		scripts\fetch-tmdb.sh = scripts\fetch-tmdb.sh
-		scripts\import-transform.sql = scripts\import-transform.sql
+		scripts\helpers\import-transform.sql = scripts\helpers\import-transform.sql
 		scripts\load-movies.sh = scripts\load-movies.sh
 		scripts\stack-up.sh = scripts\stack-up.sh
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Tests.Shared", "Movies.Tests.Shared\Movies.Tests.Shared.csproj", "{2887A89E-AE78-45B0-8518-AF5C10633291}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Tests.Shared", "Tests\Movies.Tests.Shared\Movies.Tests.Shared.csproj", "{2887A89E-AE78-45B0-8518-AF5C10633291}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Api.Tests", "Identity.Api.Tests\Identity.Api.Tests.csproj", "{1541385C-BC9F-41D5-BE61-E367972FB698}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Api.Tests", "Tests\Identity.Api.Tests\Identity.Api.Tests.csproj", "{1541385C-BC9F-41D5-BE61-E367972FB698}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{440FEB5C-ABCC-4188-A8E5-BFDDCD537D26}"
 EndProject

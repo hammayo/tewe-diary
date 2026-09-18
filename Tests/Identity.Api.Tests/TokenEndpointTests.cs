@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Identity.Api.Contracts;
 
 namespace Identity.Api.Tests;
 

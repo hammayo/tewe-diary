@@ -82,8 +82,8 @@ inside the container:
 
     CID=$(docker compose ps -q db)
     docker cp Resources/tmdb-movies.ndjson "$CID":/tmp/tmdb-movies.ndjson
-    docker cp scripts/import-transform.sql "$CID":/tmp/import-transform.sql
-    docker cp scripts/import-movies.sql    "$CID":/tmp/import-movies.sql
+    docker cp scripts/helpers/import-transform.sql "$CID":/tmp/import-transform.sql
+    docker cp scripts/helpers/import-movies.sql    "$CID":/tmp/import-movies.sql
 
     docker compose exec -T db \
       psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
