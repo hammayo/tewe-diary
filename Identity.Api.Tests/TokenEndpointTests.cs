@@ -14,27 +14,33 @@ public class TokenEndpointTests : IClassFixture<IdentityApiFactory>
     public TokenEndpointTests(IdentityApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Token_is_issued_with_the_standard_claims()
+    public async Task token_is_issued_with_the_standard_claims()
     {
+        // Arrange
         var client = _factory.CreateClient();
         var userId = Guid.NewGuid();
         var request = new TokenGenerationRequest { UserId = userId, Email = "user@test.local" };
 
+        // Act
         var response = await client.PostAsync(TokenUrl, AsJson(request));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var jwt = await ReadTokenAsync(response);
+        var email = jwt.Claims.Single(c => c.Type == "email").Value;
+        var userIdClaim = jwt.Claims.Single(c => c.Type == "userid").Value;
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(IdentityApiFactory.Issuer, jwt.Issuer);
-        Assert.Contains(jwt.Audiences, a => a == IdentityApiFactory.Audience);
-        Assert.Equal("user@test.local", jwt.Claims.Single(c => c.Type == "email").Value);
-        Assert.Equal(userId.ToString(), jwt.Claims.Single(c => c.Type == "userid").Value);
+        Assert.Contains(IdentityApiFactory.Audience, jwt.Audiences);
+        Assert.Equal("user@test.local", email);
+        Assert.Equal(userId.ToString(), userIdClaim);
     }
 
     [Theory]
     [InlineData("admin")]
     [InlineData("trusted_member")]
-    public async Task Token_includes_custom_boolean_claims(string claimName)
+    public async Task token_includes_custom_boolean_claims(string claimName)
     {
+        // Arrange
         var client = _factory.CreateClient();
         var request = new TokenGenerationRequest
         {
@@ -43,11 +49,14 @@ public class TokenEndpointTests : IClassFixture<IdentityApiFactory>
             CustomClaims = new Dictionary<string, object> { [claimName] = true }
         };
 
+        // Act
         var response = await client.PostAsync(TokenUrl, AsJson(request));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var jwt = await ReadTokenAsync(response);
-        Assert.Equal("true", jwt.Claims.Single(c => c.Type == claimName).Value);
+        var claimValue = jwt.Claims.Single(c => c.Type == claimName).Value;
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("true", claimValue);
     }
 
     private static StringContent AsJson(object value) =>

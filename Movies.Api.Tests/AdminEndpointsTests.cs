@@ -17,40 +17,38 @@ public class AdminEndpointsTests
     [Theory]
     [InlineData(null)]              // no x-api-key header at all
     [InlineData("not-the-key")]    // wrong key
-    public async Task Evict_without_a_valid_api_key_is_rejected(string? apiKey)
+    public async Task evict_without_a_valid_api_key_is_rejected(string? apiKey)
     {
+        // Arrange
         await _fx.ResetAsync();
         var client = _fx.Factory.CreateApiKeyClient(apiKey);
 
+        // Act
         var response = await client.PostAsync(EvictUrl, content: null);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         await _fx.CacheStore.DidNotReceive().EvictByTagAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Evict_with_a_valid_api_key_evicts_the_movies_tag()
+    [Theory]
+    [InlineData(false)] // direct request
+    [InlineData(true)]  // App Service terminates TLS: container receives X-Forwarded-Proto=https
+    public async Task evict_with_a_valid_api_key_evicts_the_movies_tag(bool behindForwardedProto)
     {
+        // Arrange
         await _fx.ResetAsync();
         var client = _fx.Factory.CreateApiKeyClient();
+        if (behindForwardedProto)
+        {
+            // The ForwardedHeaders middleware must honour it without breaking routing or auth.
+            client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+        }
 
+        // Act
         var response = await client.PostAsync(EvictUrl, content: null);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        await _fx.CacheStore.Received().EvictByTagAsync("movies", Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Evict_still_works_behind_a_forwarded_proto_header()
-    {
-        // Simulates App Service terminating TLS: the container receives X-Forwarded-Proto=https.
-        // The ForwardedHeaders middleware must honour it without breaking routing or auth.
-        await _fx.ResetAsync();
-        var client = _fx.Factory.CreateApiKeyClient();
-        client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
-
-        var response = await client.PostAsync(EvictUrl, content: null);
-
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         await _fx.CacheStore.Received().EvictByTagAsync("movies", Arg.Any<CancellationToken>());
     }

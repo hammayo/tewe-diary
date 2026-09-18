@@ -13,18 +13,21 @@ public class MigrationRunnerTests
     public MigrationRunnerTests(PostgresFixture fx) => _fx = fx;
 
     [Fact]
-    public async Task Run_creates_the_baseline_schema()
+    public async Task run_creates_the_baseline_schema()
     {
+        // Arrange
+        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
+
+        // Act
         MigrationRunner.Run(_fx.ConnectionString);
 
-        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
+        // Assert
         using var connection = await factory.CreateConnectionAsync();
 
         var tables = (await connection.QueryAsync<string>("""
             select table_name from information_schema.tables
             where table_schema = 'public'
             """)).ToHashSet();
-
         Assert.Contains("movies", tables);
         Assert.Contains("genres", tables);
         Assert.Contains("ratings", tables);
@@ -35,7 +38,6 @@ public class MigrationRunnerTests
             where table_name = 'movie_metadata'
             order by column_name
             """)).ToList();
-
         Assert.Equal(new[] { "fetched_at", "movieid", "raw", "tmdb_id" }, metadataColumns);
     }
 }
