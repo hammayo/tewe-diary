@@ -1,0 +1,84 @@
+### Tewe Movies API — run these top-to-bottom in Rider/VS/VS Code.
+### `login` and `createMovie` are named so later requests reuse the token and the new movie id.
+### Start the stack first (./scripts/stack-up.sh) so the API (5001) and Identity (5003) are up.
+
+@apiHost = https://localhost:5001
+@identityHost = https://localhost:5003
+@apiKey = dev-api-key
+
+### Generate a JWT (admin + trusted so every endpoint is reachable).
+# @name login
+POST {{identityHost}}/token
+Content-Type: application/json
+
+{
+  "userid": "d8566de3-b1a6-4a9b-b842-8e3887a82e41",
+  "email": "dev@tewe.local",
+  "customClaims": {
+    "admin": true,
+    "trusted_member": true
+  }
+}
+
+### Reuse the token from the login response for every authenticated call below.
+@token = {{login.response.body.$}}
+
+### Create a movie (Trusted). Captures the new id for the requests that follow.
+# @name createMovie
+POST {{apiHost}}/api/v1/movies
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Nick the Greek",
+  "yearOfRelease": 2023,
+  "genres": [ "Comedy" ]
+}
+
+@movieId = {{createMovie.response.body.$.id}}
+@movieSlug = {{createMovie.response.body.$.slug}}
+
+### Get all movies (anonymous). Supports title / year / sortBy / page / pageSize.
+GET {{apiHost}}/api/v1/movies?page=1&pageSize=10&sortBy=-yearOfRelease
+Accept: application/json
+
+### Get a single movie by id or slug (anonymous).
+GET {{apiHost}}/api/v1/movies/{{movieId}}
+Accept: application/json
+
+### Update the movie (Trusted).
+PUT {{apiHost}}/api/v1/movies/{{movieId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Nick the Greek",
+  "yearOfRelease": 2023,
+  "genres": [ "Comedy", "Action" ]
+}
+
+### Rate the movie 1-5 (any authenticated user).
+PUT {{apiHost}}/api/v1/movies/{{movieId}}/ratings
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rating": 5
+}
+
+### List the current user's ratings.
+GET {{apiHost}}/api/v1/ratings/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Remove this user's rating for the movie.
+DELETE {{apiHost}}/api/v1/movies/{{movieId}}/ratings
+Authorization: Bearer {{token}}
+
+### Delete the movie (Admin).
+DELETE {{apiHost}}/api/v1/movies/{{movieId}}
+Authorization: Bearer {{token}}
+
+### Evict the "movies" output cache (API-key protected, no JWT).
+POST {{apiHost}}/api/v1/admin/cache/evict
+x-api-key: {{apiKey}}

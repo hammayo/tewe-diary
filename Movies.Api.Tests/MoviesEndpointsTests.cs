@@ -9,7 +9,7 @@ namespace Movies.Api.Tests;
 [Collection("api")]
 public class MoviesEndpointsTests
 {
-    private const string MoviesUrl = "/api/movies";
+    private const string MoviesUrl = "/api/v1/movies";
 
     private readonly ApiFixture _fx;
 

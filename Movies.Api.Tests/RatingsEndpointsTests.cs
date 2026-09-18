@@ -8,8 +8,8 @@ namespace Movies.Api.Tests;
 [Collection("api")]
 public class RatingsEndpointsTests
 {
-    private const string MoviesUrl = "/api/movies";
-    private const string UserRatingsUrl = "/api/ratings/me";
+    private const string MoviesUrl = "/api/v1/movies";
+    private const string UserRatingsUrl = "/api/v1/ratings/me";
 
     private readonly ApiFixture _fx;
 

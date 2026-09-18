@@ -2,7 +2,9 @@
 
 public static class ApiEndpoints
 {
-    private const string ApiBase = "api";
+    // The v{version:apiVersion} segment is substituted from each controller's [ApiVersion]
+    // (v1 today), so routing is version-aware and a v2 (e.g. minimal API) can live alongside.
+    private const string ApiBase = "api/v{version:apiVersion}";
     
     public static class Movies
     {

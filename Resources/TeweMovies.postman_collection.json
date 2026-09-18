@@ -59,7 +59,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:5001/api/movies",
+							"raw": "https://localhost:5001/api/v1/movies",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -67,6 +67,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies"
 							]
 						}
@@ -82,7 +83,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:5001/api/movies/",
+							"raw": "https://localhost:5001/api/v1/movies/",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -90,6 +91,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies",
 								""
 							]
@@ -103,7 +105,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:5001/api/movies",
+							"raw": "https://localhost:5001/api/v1/movies",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -111,6 +113,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies"
 							]
 						}
@@ -135,7 +138,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:5001/api/movies/{id}",
+							"raw": "https://localhost:5001/api/v1/movies/{id}",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -143,6 +146,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies",
 								"{id}"
 							]
@@ -159,7 +163,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:5001/api/movies/{id}",
+							"raw": "https://localhost:5001/api/v1/movies/{id}",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -167,6 +171,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies",
 								"{id}"
 							]
@@ -197,7 +202,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:5001/api/movies/{id}/ratings",
+							"raw": "https://localhost:5001/api/v1/movies/{id}/ratings",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -205,6 +210,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies",
 								"{id}",
 								"ratings"
@@ -234,7 +240,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:5001/api/ratings/me",
+							"raw": "https://localhost:5001/api/v1/ratings/me",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -242,6 +248,7 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"ratings",
 								"me"
 							]
@@ -258,7 +265,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:5001/api/movies/{id}/ratings",
+							"raw": "https://localhost:5001/api/v1/movies/{id}/ratings",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -266,9 +273,47 @@
 							"port": "5001",
 							"path": [
 								"api",
+								"v1",
 								"movies",
 								"{id}",
 								"ratings"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Evict cache",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-api-key",
+								"value": "dev-api-key",
+								"description": "Matches the API_KEY config value"
+							}
+						],
+						"url": {
+							"raw": "https://localhost:5001/api/v1/admin/cache/evict",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "5001",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"cache",
+								"evict"
 							]
 						}
 					},

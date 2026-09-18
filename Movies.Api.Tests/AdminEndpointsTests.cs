@@ -8,7 +8,7 @@ namespace Movies.Api.Tests;
 [Collection("api")]
 public class AdminEndpointsTests
 {
-    private const string EvictUrl = "/api/admin/cache/evict";
+    private const string EvictUrl = "/api/v1/admin/cache/evict";
 
     private readonly ApiFixture _fx;
 

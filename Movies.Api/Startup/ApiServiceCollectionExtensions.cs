@@ -97,7 +97,7 @@ public static class ApiServiceCollectionExtensions
             x.DefaultApiVersion = new ApiVersion(1.0);
             x.AssumeDefaultVersionWhenUnspecified = true;
             x.ReportApiVersions = true;
-            x.ApiVersionReader = new MediaTypeApiVersionReader("api-version");
+            x.ApiVersionReader = new UrlSegmentApiVersionReader();
         }).AddMvc().AddApiExplorer();
 
         return services;

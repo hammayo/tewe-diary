@@ -2,7 +2,7 @@
 
 public static class ApiEndpoints
 {
-    private const string ApiBase = "/api";
+    private const string ApiBase = "/api/v1";
     
     public static class Movies
     {
