@@ -37,6 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{C0B1
 		scripts\helpers\import-transform.sql = scripts\helpers\import-transform.sql
 		scripts\load-movies.sh = scripts\load-movies.sh
 		scripts\stack-up.sh = scripts\stack-up.sh
+		scripts\azure-setup.sh = scripts\azure-setup.sh
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Movies.Tests.Shared", "Tests\Movies.Tests.Shared\Movies.Tests.Shared.csproj", "{2887A89E-AE78-45B0-8518-AF5C10633291}"

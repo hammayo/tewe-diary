@@ -4,6 +4,9 @@
 ## Working docs (PRD plans/specs docs) excluded from git for now
 _task/
 
+## AI assistant working directory
+.ai/
+
 ## Generated data output
 Data/*.ndjson
 

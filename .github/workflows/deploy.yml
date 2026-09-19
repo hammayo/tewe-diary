@@ -36,8 +36,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
@@ -45,12 +45,16 @@ jobs:
 
   deploy:
     needs: test
+    # Only deploy when Azure is configured. Set repo variable DEPLOY_ENABLED=true
+    # (Settings → Secrets and variables → Actions → Variables) once the AZURE_*
+    # secrets exist; otherwise the job is skipped instead of failing at login.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -69,7 +73,7 @@ jobs:
           echo "MOVIES_IMAGE=$MOVIES_IMAGE" >> "$GITHUB_ENV"
           echo "IDENTITY_IMAGE=$IDENTITY_IMAGE" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 

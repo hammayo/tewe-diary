@@ -66,6 +66,8 @@ Full setup, config, ports, and a token-and-create-a-movie `curl` walkthrough are
 | [Design decisions & notes](_docs/design-decisions.md) | The deliberate trade-offs and when to revisit them                       |
 | [Testing](_docs/testing.md)                           | Unit + Testcontainers integration strategy and conventions               |
 | [CI/CD & deployment](_docs/ci-cd.md)                  | Build→test→migrate→deploy, Key Vault, DB role separation                 |
+| [Azure deployment runbook](_docs/azure-deployment.md) | Step-by-step `az`/`gh` provisioning to enable the deploy pipeline        |
+| [Workflows reference](.github/workflows/_README.md)   | Operational detail for the GitHub Actions workflows                      |
 | [TMDB import runbook](_docs/tmdb-import.md)           | Data pipeline: fetch → transform → load                                  |
 
 ## Roadmap

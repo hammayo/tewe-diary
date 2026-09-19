@@ -1,7 +1,10 @@
 # CI/CD & deployment
 
-GitHub Actions workflows live in `.github/workflows/` 
-(see also `.github/workflows/_README.md` for the operational detail).
+GitHub Actions workflows live in `.github/workflows/`
+(see the [workflows reference](../.github/workflows/_README.md) for operational detail).
+
+To provision Azure and wire up the secrets/variables this pipeline needs, follow the
+step-by-step [Azure deployment runbook](azure-deployment.md).
 
 ## Pipeline
 
