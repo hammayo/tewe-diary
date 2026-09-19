@@ -26,6 +26,9 @@ env:
 
 jobs:
   import:
+    # Needs the Azure OIDC secrets; skip (don't fail at login) until Azure is configured.
+    # Set repo variable DEPLOY_ENABLED=true once the AZURE_* secrets exist.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -74,5 +77,5 @@ jobs:
           set -euo pipefail
           API_KEY="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
                      --name "${{ vars.MOVIES_API_KEY_SECRET }}" --query value -o tsv)"
-          curl -fsS -X POST "https://${{ vars.WEBAPP_NAME }}.azurewebsites.net/api/admin/cache/evict" \
+          curl -fsS -X POST "https://${{ vars.WEBAPP_NAME }}.azurewebsites.net/api/v1/admin/cache/evict" \
             -H "x-api-key: $API_KEY"

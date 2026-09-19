@@ -1,5 +1,11 @@
 # TeweRestApi
 
+[![Deploy](https://img.shields.io/github/actions/workflow/status/hammayo/tewe-diary/deploy.yml?branch=main&label=deploy&logo=githubactions&logoColor=white)](https://github.com/hammayo/tewe-diary/actions/workflows/deploy.yml)
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Azure](https://img.shields.io/badge/Azure-App%20Service-0078D4?logo=microsoftazure&logoColor=white)](_docs/azure-deployment.md)
+
 A production-shaped **.NET 9 REST API** for movies and ratings — a backend portfolio
 piece that shows decisions an engineer I make end to end: clean layering, versioned
 REST design, JWT + policy-based authorization, output caching, validation, Dapper/Postgres
@@ -23,26 +29,18 @@ pipeline, and a full build → test → migrate → deploy path to Azure.
 
 ## System at a glance
 
-```
-                  ┌─────────────────────────────────────┐
-                  │              API client             │
-                  │   (SPA / Refit SDK / Postman)       │
-                  └─────────┬───────────────────┬───────┘
-            1. POST /token  │                   │ 3. GET/POST/PUT/DELETE
-               (credentials)│                   │    Authorization: Bearer <JWT>
-                            ▼                   ▼
-                 ┌────────────────┐          ┌────────────────────────────────┐
-                 │ Identity.Api   │  2. JWT  │          Movies.Api            │
-                 │  issues JWT    │─────────▶│  versioning · authz · caching  │
-                 │                │  (shared │  validation · Swagger · health │
-                 └────────────────┘  secret) └───────────────┬────────────────┘
-                                                             │ Dapper
-                                                             ▼
-                                                    ┌──────────────────┐
-                                                    │    PostgreSQL    │
-                                                    │ (migrations own  │
-                                                    │  the schema)     │
-                                                    └──────────────────┘
+```mermaid
+flowchart TD
+    client["API client<br/>(SPA / Refit SDK / Postman)"]
+    identity["Identity.Api<br/>issues JWT"]
+    movies["Movies.Api<br/>versioning · authz · caching · validation"]
+    db[("PostgreSQL<br/>migrations own the schema")]
+
+    client -->|"1 · POST /token"| identity
+    identity -->|"2 · signed JWT"| client
+    client -->|"3 · Bearer JWT · GET/POST/PUT/DELETE"| movies
+    movies -->|Dapper| db
+    identity -. shared signing secret .-> movies
 ```
 
 ## Quickstart

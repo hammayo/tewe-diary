@@ -16,7 +16,7 @@ build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate
 - **Images** are built for both APIs and pushed to Azure Container Registry.
 - **Migrate** applies FluentMigrator migrations **before** deploy, using a
   least-privilege **DDL role** (separate from the app's runtime role).
-- **Deploy** ships both APIs to Azure (Web App + slot).
+- **Deploy** ships both APIs straight to their Azure Web Apps (Basic B1 plan — no slots).
 
 ## Secrets & configuration
 

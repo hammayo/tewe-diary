@@ -32,7 +32,6 @@ esac
 LOCATION="${LOCATION:-uksouth}"
 NAME_PREFIX="${NAME_PREFIX:-tewe}"          # base for auto-generated resource names
 PG_ADMIN="${PG_ADMIN:-teweadmin}"
-SLOT="${SLOT:-staging}"
 # Advanced overrides (blank = auto-derived below):
 #   ACR_NAME  KV  PG  MOVIES_APP  IDENTITY_APP  GH_REPO  JWT_ISSUER  JWT_AUDIENCE
 # Secrets (blank = taken from .env if present, else auto-generated):
@@ -99,7 +98,7 @@ cat <<EOF
   subscription : $SUB
   resource grp : $RG   ($LOCATION)
   acr / kv / pg: $ACR_NAME / $KV / $PG
-  web apps     : $MOVIES_APP , $IDENTITY_APP   (slot: $SLOT)
+  web apps     : $MOVIES_APP , $IDENTITY_APP
   github repo  : $GH_REPO
   jwt issuer   : $JWT_ISSUER
   jwt audience : $JWT_AUDIENCE
@@ -191,23 +190,22 @@ run az role assignment create --assignee "$APP_ID" --role Contributor \
 run az role assignment create --assignee "$APP_ID" --role AcrPush --scope "$ACR_ID" -o none || true
 run az role assignment create --assignee "$APP_ID" --role "Key Vault Secrets User" --scope "$KV_ID" -o none || true
 
-# ── 8. Web Apps for Containers (+ slots, identities, settings) ───────────────
-step "8. Web Apps ($MOVIES_APP, $IDENTITY_APP) + staging slots"
+# ── 8. Web Apps for Containers (identities + settings) ───────────────────────
+# Basic B1 plan (cheapest for containers) — no deployment slots; deploy.yml ships
+# straight to production.
+step "8. Web Apps ($MOVIES_APP, $IDENTITY_APP)"
 run az appservice plan create -g "$RG" -n "$PLAN" --is-linux --sku B1 -o none
 PLACEHOLDER="mcr.microsoft.com/dotnet/samples:aspnetapp"
 for APP in "$MOVIES_APP" "$IDENTITY_APP"; do
   run az webapp create -g "$RG" -p "$PLAN" -n "$APP" --deployment-container-image-name "$PLACEHOLDER" -o none
-  run az webapp deployment slot create -g "$RG" -n "$APP" --slot "$SLOT" -o none || true
-  for SCOPE in "" "--slot $SLOT"; do
-    if $DRY_RUN; then PID="<principal-id>"
-    else PID="$(az webapp identity assign -g "$RG" -n "$APP" $SCOPE --query principalId -o tsv)"; fi
+  if $DRY_RUN; then PID="<principal-id>"
+  else PID="$(az webapp identity assign -g "$RG" -n "$APP" --query principalId -o tsv)"; fi
+  run az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
+    --role AcrPull --scope "$ACR_ID" -o none || true
+  if [ "$APP" = "$MOVIES_APP" ]; then
     run az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
-      --role AcrPull --scope "$ACR_ID" -o none || true
-    if [ "$APP" = "$MOVIES_APP" ]; then
-      run az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
-        --role "Key Vault Secrets User" --scope "$KV_ID" -o none || true
-    fi
-  done
+      --role "Key Vault Secrets User" --scope "$KV_ID" -o none || true
+  fi
 done
 
 step "8b. App settings"
@@ -215,15 +213,13 @@ if $DRY_RUN; then
   echo "  [dry-run] set Movies app settings (KeyVault__Uri, Database__*, JWT_* ***, API_KEY ***, WEBSITES_PORT)"
   echo "  [dry-run] set Identity app settings (JWT_* ***, WEBSITES_PORT)"
 else
-  for SCOPE in "" "--slot $SLOT"; do
-    az webapp config appsettings set -g "$RG" -n "$MOVIES_APP" $SCOPE -o none --settings \
-      WEBSITES_PORT=8080 KeyVault__Uri="$KV_URI" Database__SslMode=Require \
-      Database__MigrateOnStartup=false JWT_TOKEN_SECRET="$JWT_SECRET" \
-      JWT_ISSUER="$JWT_ISSUER" JWT_AUDIENCE="$JWT_AUDIENCE" API_KEY="$API_KEY"
-    az webapp config appsettings set -g "$RG" -n "$IDENTITY_APP" $SCOPE -o none --settings \
-      WEBSITES_PORT=8080 JWT_TOKEN_SECRET="$JWT_SECRET" \
-      JWT_ISSUER="$JWT_ISSUER" JWT_AUDIENCE="$JWT_AUDIENCE"
-  done
+  az webapp config appsettings set -g "$RG" -n "$MOVIES_APP" -o none --settings \
+    WEBSITES_PORT=8080 KeyVault__Uri="$KV_URI" Database__SslMode=Require \
+    Database__MigrateOnStartup=false JWT_TOKEN_SECRET="$JWT_SECRET" \
+    JWT_ISSUER="$JWT_ISSUER" JWT_AUDIENCE="$JWT_AUDIENCE" API_KEY="$API_KEY"
+  az webapp config appsettings set -g "$RG" -n "$IDENTITY_APP" -o none --settings \
+    WEBSITES_PORT=8080 JWT_TOKEN_SECRET="$JWT_SECRET" \
+    JWT_ISSUER="$JWT_ISSUER" JWT_AUDIENCE="$JWT_AUDIENCE"
 fi
 
 # ── 9. GitHub secrets & variables ────────────────────────────────────────────
@@ -241,9 +237,7 @@ if command -v gh >/dev/null && { $DRY_RUN || gh auth status >/dev/null 2>&1; }; 
   gh_var KEY_VAULT_NAME             "$KV"
   gh_var PG_SERVER_NAME            "$PG"
   gh_var WEBAPP_NAME             "$MOVIES_APP"
-  gh_var SLOT_NAME              "$SLOT"
   gh_var IDENTITY_WEBAPP_NAME  "$IDENTITY_APP"
-  gh_var IDENTITY_SLOT_NAME   "$SLOT"
   gh_var MIGRATION_CONNECTION_SECRET "$KV_MIGRATION_CONN"
   gh_var IMPORTER_CONNECTION_SECRET  "$KV_IMPORTER_CONN"
   gh_var TMDB_API_KEY_SECRET         "$KV_TMDB"
@@ -256,8 +250,8 @@ else
 
   Secrets:   AZURE_CLIENT_ID=$APP_ID   AZURE_TENANT_ID=$TENANT   AZURE_SUBSCRIPTION_ID=$SUB
   Variables: ACR_NAME=$ACR_NAME  ACR_LOGIN_SERVER=$ACR_LOGIN_SERVER  RESOURCE_GROUP=$RG
-             KEY_VAULT_NAME=$KV  PG_SERVER_NAME=$PG  WEBAPP_NAME=$MOVIES_APP  SLOT_NAME=$SLOT
-             IDENTITY_WEBAPP_NAME=$IDENTITY_APP  IDENTITY_SLOT_NAME=$SLOT
+             KEY_VAULT_NAME=$KV  PG_SERVER_NAME=$PG  WEBAPP_NAME=$MOVIES_APP
+             IDENTITY_WEBAPP_NAME=$IDENTITY_APP
              MIGRATION_CONNECTION_SECRET=$KV_MIGRATION_CONN  IMPORTER_CONNECTION_SECRET=$KV_IMPORTER_CONN
              TMDB_API_KEY_SECRET=$KV_TMDB  MOVIES_API_KEY_SECRET=$KV_MOVIES_API_KEY  DEPLOY_ENABLED=true
 EOF

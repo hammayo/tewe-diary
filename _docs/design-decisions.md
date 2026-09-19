@@ -15,6 +15,8 @@ them. Lightweight ADR style: **decision → rationale → revisit when**.
 8. [URL-segment API versioning from day one](#8-url-segment-api-versioning-from-day-one)
 9. [Integration tests hit a real Postgres](#9-integration-tests-hit-a-real-postgres)
 10. [Repository housekeeping](#10-repository-housekeeping)
+11. [Deployment hosting and cost (Basic B1, no slots)](#11-deployment-hosting-and-cost-basic-b1-no-slots)
+12. [Getting to $0 (free-tier options and limitations)](#12-getting-to-0-free-tier-options-and-limitations)
 
 ## 1. One `Movies.Application` project, not separate Domain/Application/Infrastructure
 
@@ -111,3 +113,58 @@ See [testing.md](testing.md).
 - **`Data/` (generated ndjson) and `_task/` (working specs/plans) are gitignored** — generated
   data and in-flight planning docs don't belong in version control.
 - **Postman collection** lives under `Ops.Tools/Postman/` alongside the DB CLI as operational tooling.
+
+## 11. Deployment hosting and cost (Basic B1, no slots)
+
+**Decision.** Both APIs deploy to **Azure App Service for Containers on a Basic (B1) plan**,
+**directly to production** — no staging slots, no blue/green swap.
+
+**Rationale.** This is a demo/portfolio project, not production. Staging slots require the
+**Standard (S1)** tier (~5× the B1 price, ≈ $69/mo vs ≈ $13/mo) and Basic doesn't support them
+at all. Paying for zero-downtime swaps isn't justified when a brief restart is acceptable.
+
+**What changed in the code (2026-09).** The original pipeline was slot-based; it was simplified:
+
+- `deploy.yml`: removed the *deploy-to-staging-slot → warm-slot → swap* steps; now does
+  *deploy image to production → `az webapp restart` → health-check* for both apps. Dropped the
+  `SLOT_NAME` / `IDENTITY_SLOT_NAME` variables.
+- `scripts/azure-setup.sh`: removed slot creation and the per-slot identity / app-settings loops
+  (one system-assigned identity and one app-settings set per app); dropped the `SLOT` config var
+  and the two slot GitHub variables.
+- Docs (`azure-deployment.md`, `ci-cd.md`, `.github/workflows/_README.md`) updated to match.
+
+**Limitation.** No zero-downtime deploys — a deploy restarts the container, so there's a short
+outage and a brief window where new migrations meet the old image. Migrations are kept
+**backward-compatible (expand/contract)** to keep that window safe. **Revisit** by moving to
+S1 + slots only if this ever needs real uptime.
+
+**Cost (approx, pay-as-you-go).** ACR Basic ~$5/mo · Postgres Flexible Server B1ms + ~32 GB
+~$15–25/mo · App Service B1 ~$13/mo · Key Vault pennies ≈ **$35–45/mo**. `az group delete`
+(setup script step 12) stops all charges. A dry-run (`scripts/azure-setup.sh --dry-run`) costs
+nothing.
+
+## 12. Getting to $0 (free-tier options and limitations)
+
+Truly $0-forever isn't achievable on this *exact* Azure stack, because: Linux App Service
+**Free (F1) can't run custom containers** (code only); **PostgreSQL Flexible Server has no
+perpetual free tier** (new accounts get 12 months free, then paid); and **ACR Basic isn't free**.
+The options, with their trade-offs:
+
+| Option | How | Cost | Limitation |
+|--------|-----|------|------------|
+| **Local Docker** (recommended default) | `bash scripts/stack-up.sh` | $0, no cloud | No public URL; demo via screenshots/GIF |
+| **Temporary Azure** | Current design + new-account **$200/30-day credit** and **12-month free Postgres**; tear down after | $0 out-of-pocket while within credit | Not permanent; must `az group delete` to avoid later charges |
+| **$0 public (different stack)** | **Azure Container Apps** (consumption free grant + scale-to-zero) + **GitHub Container Registry** (free public images) + free managed Postgres (**Neon**/**Supabase**) + **no Key Vault** (config via env/secrets) | ~$0 for low traffic | Real rework of `deploy.yml` + `azure-setup.sh`; no longer "App Service"; cold starts from scale-to-zero; free DB size caps |
+
+**Decision (current).** Keep the App Service B1 design (see #11) and treat **local Docker** as the
+default $0 demo path, with **temporary Azure under the free credit** to show it live. The
+Container Apps + ghcr + Neon path is documented as the route to a *permanently-live* $0 URL but
+is **not implemented** — it would swap the hosting/registry/DB and drop Key Vault.
+
+**Notes on the $0-public path (if pursued later).**
+- The app is host-agnostic: it reads `Database:ConnectionString` from config, so pointing it at
+  Neon/Supabase needs no code change.
+- Key Vault is already optional — the app skips it when `KeyVault:Uri` is unset (see #5-ish wiring
+  in `ApiServiceCollectionExtensions`), so a $0 build just supplies config via env vars/secrets.
+- Free tiers change; verify current Container Apps grant, ghcr limits, and Neon/Supabase caps
+  before relying on them.

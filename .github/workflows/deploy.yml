@@ -1,20 +1,20 @@
 name: Deploy
 
-# Build → test → push images (Movies.Api + Identity.Api) → migrate (DDL role) → deploy both to
-# staging slots → warm → swap. Migrations run BEFORE the swap; keep them backward-compatible
-# (expand/contract) so the old image keeps serving until the swap instant.
+# Build → test → push images (Movies.Api + Identity.Api) → migrate (DDL role) → deploy both
+# directly to production. No staging slots (kept on the cheap Basic B1 plan, which doesn't
+# support slots). Keep migrations backward-compatible (expand/contract) to minimise the
+# brief window where the new schema meets the old image during restart.
 #
 # Required GitHub configuration:
 #   secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID   (OIDC federated identity)
 #   vars:    ACR_NAME, ACR_LOGIN_SERVER, RESOURCE_GROUP, KEY_VAULT_NAME, PG_SERVER_NAME,
 #            MIGRATION_CONNECTION_SECRET,
-#            WEBAPP_NAME, SLOT_NAME,                     (Movies.Api Web App + slot)
-#            IDENTITY_WEBAPP_NAME, IDENTITY_SLOT_NAME    (Identity.Api Web App + slot)
+#            WEBAPP_NAME,            (Movies.Api Web App)
+#            IDENTITY_WEBAPP_NAME    (Identity.Api Web App)
 # Azure prerequisites (one-time):
 #   - Federated credential on the app registration for this repo/environment.
-#   - Two Web Apps for Containers (Movies + Identity), each with its staging slot and a managed
-#     identity holding AcrPull on the ACR (Movies also needs get/list on the Key Vault);
-#     app setting WEBSITES_PORT=8080 on both.
+#   - Two Web Apps for Containers (Movies + Identity), each with a managed identity holding
+#     AcrPull on the ACR (Movies also needs get/list on the Key Vault); WEBSITES_PORT=8080.
 #   - Movies app settings: KeyVault:Uri, Database:SslMode=Require, Database:MigrateOnStartup=false.
 #   - Identity app settings: JWT_TOKEN_SECRET, JWT_ISSUER, JWT_AUDIENCE — these MUST match the
 #     values Movies.Api validates with, or issued tokens will be rejected.
@@ -93,41 +93,31 @@ jobs:
                 --name "${{ vars.MIGRATION_CONNECTION_SECRET }}" --query value -o tsv)"
           Database__ConnectionString="$CS" dotnet run --project Ops.Tools/Movies.DbTool -c Release -- migrate
 
-      - name: Deploy images to staging slots
+      - name: Deploy images to production
         run: |
           set -euo pipefail
           az webapp config container set \
             -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
-            --slot "${{ vars.SLOT_NAME }}" \
             --container-image-name "$MOVIES_IMAGE" \
             --container-registry-url "https://${{ vars.ACR_LOGIN_SERVER }}"
           az webapp config container set \
             -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.IDENTITY_WEBAPP_NAME }}" \
-            --slot "${{ vars.IDENTITY_SLOT_NAME }}" \
             --container-image-name "$IDENTITY_IMAGE" \
             --container-registry-url "https://${{ vars.ACR_LOGIN_SERVER }}"
+          az webapp restart -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}"
+          az webapp restart -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.IDENTITY_WEBAPP_NAME }}"
 
-      - name: Warm staging slots
+      - name: Warm & health-check
         run: |
           set -euo pipefail
           warm() {
             local url="$1"
-            for i in $(seq 1 12); do
+            for i in $(seq 1 18); do
               if curl -fsS "$url" >/dev/null; then echo "healthy: $url"; return 0; fi
               echo "waiting ($i) for $url..."; sleep 10
             done
-            echo "Slot did not become healthy: $url" >&2
+            echo "App did not become healthy: $url" >&2
             return 1
           }
-          warm "https://${{ vars.WEBAPP_NAME }}-${{ vars.SLOT_NAME }}.azurewebsites.net/_health"
-          warm "https://${{ vars.IDENTITY_WEBAPP_NAME }}-${{ vars.IDENTITY_SLOT_NAME }}.azurewebsites.net/_health"
-
-      - name: Swap staging into production
-        run: |
-          set -euo pipefail
-          az webapp deployment slot swap \
-            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.WEBAPP_NAME }}" \
-            --slot "${{ vars.SLOT_NAME }}" --target-slot production
-          az webapp deployment slot swap \
-            -g "${{ vars.RESOURCE_GROUP }}" -n "${{ vars.IDENTITY_WEBAPP_NAME }}" \
-            --slot "${{ vars.IDENTITY_SLOT_NAME }}" --target-slot production
+          warm "https://${{ vars.WEBAPP_NAME }}.azurewebsites.net/_health"
+          warm "https://${{ vars.IDENTITY_WEBAPP_NAME }}.azurewebsites.net/_health"

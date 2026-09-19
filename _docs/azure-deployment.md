@@ -5,7 +5,7 @@ One-time provisioning to make the `deploy.yml` pipeline work, driven from your t
 `az account set --subscription <id>`). GitHub config uses the `gh` CLI; every `gh` step
 has a UI equivalent under **Settings → Secrets and variables → Actions**.
 
-The pipeline itself (build → test → push images → migrate → deploy to slots → swap) is
+The pipeline itself (build → test → push images → migrate → deploy to production) is
 described in [ci-cd.md](ci-cd.md); this doc creates the Azure + GitHub resources it needs.
 
 > **Prefer to script it? (recommended)** `scripts/azure-setup.sh` automates every step
@@ -37,7 +37,6 @@ export PG_ADMIN_PW='<a-strong-password>'
 export PLAN=tewe-plan
 export MOVIES_APP=tewe-movies-api            # globally unique (becomes *.azurewebsites.net)
 export IDENTITY_APP=tewe-identity-api        # globally unique
-export SLOT=staging
 export GH_REPO=$(git remote get-url origin | sed -E 's#.*github\.com[:/]([^/]+/[^/.]+)(\.git)?#\1#')
 export JWT_SECRET="${JWT_TOKEN_SECRET:-<a-long-random-64+char-secret>}"   # from .env
 export JWT_ISSUER="${JWT_ISSUER:-https://$IDENTITY_APP.azurewebsites.net}"
@@ -162,12 +161,15 @@ az ad app federated-credential create --id "$APP_ID" --parameters "{
 KV_ID=$(az keyvault show -n "$KV" --query id -o tsv)
 ACR_ID=$(az acr show -n "$ACR_NAME" --query id -o tsv)
 az role assignment create --assignee "$APP_ID" --role Contributor \
-  --scope "/subscriptions/$SUB/resourceGroups/$RG"     # firewall rules + slot swaps
+  --scope "/subscriptions/$SUB/resourceGroups/$RG"     # firewall rules + web app updates
 az role assignment create --assignee "$APP_ID" --role AcrPush --scope "$ACR_ID"
 az role assignment create --assignee "$APP_ID" --role "Key Vault Secrets User" --scope "$KV_ID"
 ```
 
 ## 8. Web Apps for Containers (Movies + Identity)
+
+Basic **B1** plan — cheapest for containers. No deployment slots (Basic doesn't support
+them); `deploy.yml` ships straight to production.
 
 ```bash
 az appservice plan create -g "$RG" -n "$PLAN" --is-linux --sku B1
@@ -175,27 +177,20 @@ az appservice plan create -g "$RG" -n "$PLAN" --is-linux --sku B1
 for APP in "$MOVIES_APP" "$IDENTITY_APP"; do
   az webapp create -g "$RG" -p "$PLAN" -n "$APP" \
     --deployment-container-image-name mcr.microsoft.com/dotnet/samples:aspnetapp   # placeholder until first deploy
-  az webapp deployment slot create -g "$RG" -n "$APP" --slot "$SLOT"
-  # System-assigned identity on production + staging slots
-  az webapp identity assign -g "$RG" -n "$APP"
-  az webapp identity assign -g "$RG" -n "$APP" --slot "$SLOT"
+  az webapp identity assign -g "$RG" -n "$APP"   # system-assigned identity
 done
 
-# Grant AcrPull to each app/slot identity so App Service can pull from ACR
-for TARGET in "$MOVIES_APP" "$IDENTITY_APP"; do
-  for SCOPE_SLOT in "" "--slot $SLOT"; do
-    PID=$(az webapp identity show -g "$RG" -n "$TARGET" $SCOPE_SLOT --query principalId -o tsv)
-    az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
-      --role AcrPull --scope "$ACR_ID"
-  done
-done
-
-# Movies app/slot identities also need to read Key Vault secrets
-for SCOPE_SLOT in "" "--slot $SLOT"; do
-  PID=$(az webapp identity show -g "$RG" -n "$MOVIES_APP" $SCOPE_SLOT --query principalId -o tsv)
+# Grant AcrPull to each app identity so App Service can pull from ACR
+for APP in "$MOVIES_APP" "$IDENTITY_APP"; do
+  PID=$(az webapp identity show -g "$RG" -n "$APP" --query principalId -o tsv)
   az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
-    --role "Key Vault Secrets User" --scope "$KV_ID"
+    --role AcrPull --scope "$ACR_ID"
 done
+
+# Movies app identity also needs to read Key Vault secrets
+PID=$(az webapp identity show -g "$RG" -n "$MOVIES_APP" --query principalId -o tsv)
+az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
+  --role "Key Vault Secrets User" --scope "$KV_ID"
 ```
 
 ### App settings
@@ -203,27 +198,23 @@ done
 ```bash
 KV_URI=$(az keyvault show -n "$KV" --query properties.vaultUri -o tsv)
 
-# Movies.Api — production + staging slot
-for SCOPE_SLOT in "" "--slot $SLOT"; do
-  az webapp config appsettings set -g "$RG" -n "$MOVIES_APP" $SCOPE_SLOT --settings \
-    WEBSITES_PORT=8080 \
-    KeyVault__Uri="$KV_URI" \
-    Database__SslMode=Require \
-    Database__MigrateOnStartup=false \
-    JWT_TOKEN_SECRET="$JWT_SECRET" \
-    JWT_ISSUER="$JWT_ISSUER" \
-    JWT_AUDIENCE="$JWT_AUDIENCE" \
-    API_KEY="$API_KEY"
-done
+# Movies.Api
+az webapp config appsettings set -g "$RG" -n "$MOVIES_APP" --settings \
+  WEBSITES_PORT=8080 \
+  KeyVault__Uri="$KV_URI" \
+  Database__SslMode=Require \
+  Database__MigrateOnStartup=false \
+  JWT_TOKEN_SECRET="$JWT_SECRET" \
+  JWT_ISSUER="$JWT_ISSUER" \
+  JWT_AUDIENCE="$JWT_AUDIENCE" \
+  API_KEY="$API_KEY"
 
-# Identity.Api — production + staging slot. JWT_* MUST match Movies.Api exactly.
-for SCOPE_SLOT in "" "--slot $SLOT"; do
-  az webapp config appsettings set -g "$RG" -n "$IDENTITY_APP" $SCOPE_SLOT --settings \
-    WEBSITES_PORT=8080 \
-    JWT_TOKEN_SECRET="$JWT_SECRET" \
-    JWT_ISSUER="$JWT_ISSUER" \
-    JWT_AUDIENCE="$JWT_AUDIENCE"
-done
+# Identity.Api — JWT_* MUST match Movies.Api exactly.
+az webapp config appsettings set -g "$RG" -n "$IDENTITY_APP" --settings \
+  WEBSITES_PORT=8080 \
+  JWT_TOKEN_SECRET="$JWT_SECRET" \
+  JWT_ISSUER="$JWT_ISSUER" \
+  JWT_AUDIENCE="$JWT_AUDIENCE"
 ```
 
 > `Database__SslMode`/`Database__MigrateOnStartup` use `__` (double underscore) because App
@@ -251,9 +242,7 @@ gh variable set RESOURCE_GROUP             -R "$GH_REPO" -b "$RG"
 gh variable set KEY_VAULT_NAME             -R "$GH_REPO" -b "$KV"
 gh variable set PG_SERVER_NAME             -R "$GH_REPO" -b "$PG"
 gh variable set WEBAPP_NAME                -R "$GH_REPO" -b "$MOVIES_APP"
-gh variable set SLOT_NAME                  -R "$GH_REPO" -b "$SLOT"
 gh variable set IDENTITY_WEBAPP_NAME       -R "$GH_REPO" -b "$IDENTITY_APP"
-gh variable set IDENTITY_SLOT_NAME         -R "$GH_REPO" -b "$SLOT"
 gh variable set MIGRATION_CONNECTION_SECRET -R "$GH_REPO" -b "pg-migration-connection"
 gh variable set IMPORTER_CONNECTION_SECRET  -R "$GH_REPO" -b "pg-importer-connection"
 gh variable set TMDB_API_KEY_SECRET         -R "$GH_REPO" -b "tmdb-api-key"
@@ -294,7 +283,7 @@ az ad app delete --id "$APP_ID"
 **Notes**
 - The pipeline opens a **temporary Postgres firewall rule** for the runner's IP during
   migration and removes it on exit — you don't pre-authorise the runner.
-- Keep migrations **backward-compatible** (expand/contract): they run *before* the slot swap,
-  so the old image keeps serving until the swap instant.
+- Keep migrations **backward-compatible** (expand/contract): they run *before* the new image
+  is deployed, minimising the brief window where the new schema meets the old image on restart.
 - `JWT_TOKEN_SECRET`/`JWT_ISSUER`/`JWT_AUDIENCE` must be **identical** on both apps or Movies.Api
   rejects Identity.Api's tokens. Prefer real Key Vault references over inline values in production.

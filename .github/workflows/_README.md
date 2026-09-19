@@ -47,8 +47,9 @@ Flexible Server.
 
 - **`deploy.yml`** — on push to `main` (or manual): tests, builds & pushes **two images**
   (`Movies.Api` and `Identity.Api`) to ACR, applies migrations (DDL role) *before* deploying,
-  deploys both to their staging slots, warms them, then swaps both into production. Migrations
-  must stay backward-compatible (expand/contract) because the old image serves until the swap.
+  then deploys both **directly to production** and health-checks them. No staging slots (the
+  Basic B1 plan doesn't support them). Keep migrations backward-compatible (expand/contract)
+  to minimise the brief new-schema/old-image window during restart.
 - **`import.yml`** — manual only: fetches from TMDB, runs the idempotent upsert import as the
   least-privilege `movies_importer` role, then evicts the API's `movies` cache.
 
@@ -64,7 +65,7 @@ Passwordless via **OIDC** (`azure/login`). Create a federated credential on an a
 for this repo (and the `production` environment), and grant that identity:
 
 - **AcrPush** (or Contributor) on the ACR,
-- rights to manage Flexible Server firewall rules and swap Web App slots (Contributor on the RG
+- rights to manage Flexible Server firewall rules and update the Web Apps (Contributor on the RG
   is simplest),
 - **get** on the Key Vault secrets.
 
@@ -76,8 +77,8 @@ Secrets:
 Variables:
 - `ACR_NAME`, `ACR_LOGIN_SERVER` (e.g. `myacr.azurecr.io`)
 - `RESOURCE_GROUP`
-- `WEBAPP_NAME`, `SLOT_NAME` (Movies.Api Web App + slot, e.g. `staging`)
-- `IDENTITY_WEBAPP_NAME`, `IDENTITY_SLOT_NAME` (Identity.Api Web App + slot)
+- `WEBAPP_NAME` (Movies.Api Web App)
+- `IDENTITY_WEBAPP_NAME` (Identity.Api Web App)
 - `PG_SERVER_NAME` (Flexible Server name)
 - `KEY_VAULT_NAME`
 - `MIGRATION_CONNECTION_SECRET`, `IMPORTER_CONNECTION_SECRET`, `TMDB_API_KEY_SECRET`,
@@ -85,7 +86,7 @@ Variables:
 
 ## Web Apps (one-time)
 
-Two Web Apps for Containers, each with a `staging` deployment slot and a managed identity holding
+Two Web Apps for Containers (Basic B1 plan, no slots), each with a managed identity holding
 **AcrPull** on the ACR; set `WEBSITES_PORT=8080` on both.
 
 - **Movies.Api** (`WEBAPP_NAME`): identity also needs **get/list** on the Key Vault. App settings:
