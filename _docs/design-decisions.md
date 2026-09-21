@@ -17,6 +17,7 @@ them. Lightweight ADR style: **decision → rationale → revisit when**.
 10. [Repository housekeeping](#10-repository-housekeeping)
 11. [Deployment hosting and cost (Basic B1, no slots)](#11-deployment-hosting-and-cost-basic-b1-no-slots)
 12. [Getting to $0 (free-tier options and limitations)](#12-getting-to-0-free-tier-options-and-limitations)
+13. [Deployment gotchas fixed (ACR pull, DB grants, KV propagation)](#13-deployment-gotchas-fixed-acr-pull-db-grants-kv-propagation)
 
 ## 1. One `Movies.Application` project, not separate Domain/Application/Infrastructure
 
@@ -168,3 +169,56 @@ is **not implemented** — it would swap the hosting/registry/DB and drop Key Va
   in `ApiServiceCollectionExtensions`), so a $0 build just supplies config via env vars/secrets.
 - Free tiers change; verify current Container Apps grant, ghcr limits, and Neon/Supabase caps
   before relying on them.
+
+## 13. Deployment gotchas fixed (ACR pull, DB grants, KV propagation)
+
+Three runtime gaps that a dry-run can't catch (they're ordering/timing issues, not syntax) were
+found and fixed in `scripts/azure-setup.sh` (2026-09).
+
+**1. ACR pull needs managed-identity creds explicitly enabled.**
+Granting the Web App's identity `AcrPull` is necessary but **not sufficient** — App Service still
+defaults to admin/anonymous pulls, so a private-ACR image fails to pull and the app never starts.
+*Fix:* after assigning the identity, enable it per app:
+```bash
+az webapp config set -g "$RG" -n "$APP" --generic-configurations '{"acrUseManagedIdentityCreds": true}'
+```
+
+**2. DB grants must target the DDL role's future tables.**
+Migrations run **as `movies_ddl`** and create the tables *after* setup. The original grants ran
+`GRANT … ON ALL TABLES` (zero tables existed yet) and `ALTER DEFAULT PRIVILEGES IN SCHEMA public`
+**without `FOR ROLE movies_ddl`** — so they only covered the admin's future objects, not the
+migration-created tables. Result: `movies_app` / `movies_importer` get *permission denied* at
+runtime and `/_health` fails the deploy. *Fix:* make the admin a member of `movies_ddl` and set
+default privileges **for that role** (plus sequences), so tables created by later migrations are
+auto-granted:
+```sql
+GRANT movies_ddl TO current_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_importer;
+```
+(The named-table grants in `create-importer-role.sql` are harmless no-ops pre-migration and still
+apply locally where tables already exist.)
+
+**3. Key Vault RBAC propagation.**
+Step 3 grants the operator *Key Vault Secrets Officer*, then step 6 writes secrets immediately —
+RBAC can take minutes to propagate, so a fast run 403s. *Fix:* `secret_set` now retries (10× / 15s)
+until the permission is effective.
+
+**Cheap, no-cost hardening — now applied.** These add security without changing the demo bill,
+so `azure-setup.sh` now sets them: **`--https-only true`**, **min TLS 1.2**, **FTPS disabled** on
+both Web Apps, and **resource-group tags** (`project`/`env`/`managedBy`).
+
+**Deliberately skipped for a demo.** **Key Vault purge protection** is *not* enabled: it's
+irreversible and blocks reuse of the vault name for 90 days after `az group delete`, which fights
+the spin-up → demo → tear-down loop this project relies on. Enable it for a real environment.
+
+**Still open (documented, not fixed) — production hardening.** IaC (Bicep/Terraform) instead of
+imperative CLI; private networking (Private Endpoint/VNet) instead of public Postgres + the broad
+"Allow Azure services" rule; a **narrower CI role than Contributor on the RG** (kept broad because
+managing Flexible Server firewall rules + Web App config has no tidy built-in least-privilege set,
+and getting it wrong silently breaks the pipeline); App Insights / diagnostics; RS256 + JWKS for
+JWT (see #5). These are intentional demo-tier trade-offs, not oversights.

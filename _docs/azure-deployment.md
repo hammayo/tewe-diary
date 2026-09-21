@@ -112,9 +112,21 @@ GRANT ALL ON SCHEMA public TO movies_ddl;
 CREATE ROLE movies_app LOGIN PASSWORD '$APP_PW';
 GRANT CONNECT ON DATABASE movies TO movies_app;
 GRANT USAGE ON SCHEMA public TO movies_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO movies_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
+
+-- Migrations run AS movies_ddl and create the tables LATER, so default privileges must be
+-- set FOR ROLE movies_ddl (not the admin's future objects). The admin must be a member of
+-- movies_ddl to alter its defaults. This auto-grants movies_app/importer on migration-created
+-- tables; without it they hit "permission denied" at runtime.
+GRANT movies_ddl TO current_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_importer;
+-- Cover already-existing tables too (re-run after a migration):
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO movies_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO movies_app;
 SQL
 ```
 
@@ -178,6 +190,15 @@ for APP in "$MOVIES_APP" "$IDENTITY_APP"; do
   az webapp create -g "$RG" -p "$PLAN" -n "$APP" \
     --deployment-container-image-name mcr.microsoft.com/dotnet/samples:aspnetapp   # placeholder until first deploy
   az webapp identity assign -g "$RG" -n "$APP"   # system-assigned identity
+
+  # AcrPull alone isn't enough — App Service must be told to pull with the identity,
+  # or the private-ACR image fails to pull and the app never starts.
+  az webapp config set -g "$RG" -n "$APP" \
+    --generic-configurations '{"acrUseManagedIdentityCreds": true}'
+
+  # Cheap, no-cost hardening:
+  az webapp update -g "$RG" -n "$APP" --https-only true
+  az webapp config set -g "$RG" -n "$APP" --min-tls-version 1.2 --ftps-state Disabled
 done
 
 # Grant AcrPull to each app identity so App Service can pull from ACR

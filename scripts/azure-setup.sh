@@ -42,9 +42,14 @@ PG_ADMIN="${PG_ADMIN:-teweadmin}"
 step()  { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
 gen()   { openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-24; }
 run()   { if $DRY_RUN; then printf '  [dry-run] '; printf '%q ' "$@"; printf '\n'; else "$@"; fi; }
-secret_set() {  # $1 name  $2 value  (value redacted in dry-run)
-  if $DRY_RUN; then echo "  [dry-run] az keyvault secret set --vault-name $KV --name $1 --value ***"
-  else az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none; fi
+secret_set() {  # $1 name  $2 value  (value redacted in dry-run; retries while KV RBAC propagates)
+  if $DRY_RUN; then echo "  [dry-run] az keyvault secret set --vault-name $KV --name $1 --value ***"; return; fi
+  local i
+  for i in $(seq 1 10); do
+    if az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none 2>/dev/null; then return 0; fi
+    echo "  waiting for Key Vault RBAC to propagate ($i/10)..."; sleep 15
+  done
+  echo "  ERROR: could not write secret '$1' (Key Vault permission not effective)" >&2; return 1
 }
 
 # ── Preflight ────────────────────────────────────────────────────────────────
@@ -106,7 +111,8 @@ EOF
 
 # ── 1. Resource group ────────────────────────────────────────────────────────
 step "1. Resource group"
-run az group create -n "$RG" -l "$LOCATION" -o none
+run az group create -n "$RG" -l "$LOCATION" \
+  --tags project=tewe-rest-api env=demo managedBy=azure-setup.sh -o none
 
 # ── 2. Container registry ────────────────────────────────────────────────────
 step "2. Container registry ($ACR_NAME)"
@@ -152,9 +158,22 @@ GRANT ALL ON DATABASE movies TO movies_ddl;
 GRANT ALL ON SCHEMA public TO movies_ddl;
 GRANT CONNECT ON DATABASE movies TO movies_app;
 GRANT USAGE ON SCHEMA public TO movies_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO movies_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
+
+-- Migrations run AS movies_ddl and create the tables. Default privileges must be set
+-- FOR ROLE movies_ddl (not the admin's own future objects) so movies_app / movies_importer
+-- automatically get access to tables the migrations create later. The admin must be a
+-- member of movies_ddl to ALTER its default privileges.
+GRANT movies_ddl TO current_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO movies_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE movies_ddl IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO movies_importer;
+
+-- Also cover any tables that already exist (e.g. re-running after a migration).
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO movies_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO movies_app;
 SQL
 else
   echo "  psql not found — create movies_ddl / movies_app / movies_importer manually"
@@ -206,6 +225,12 @@ for APP in "$MOVIES_APP" "$IDENTITY_APP"; do
     run az role assignment create --assignee-object-id "$PID" --assignee-principal-type ServicePrincipal \
       --role "Key Vault Secrets User" --scope "$KV_ID" -o none || true
   fi
+  # AcrPull on the identity is not enough — App Service must be told to pull with it.
+  run az webapp config set -g "$RG" -n "$APP" \
+    --generic-configurations '{"acrUseManagedIdentityCreds": true}' -o none
+  # Cheap, no-cost hardening: force HTTPS, TLS 1.2 floor, disable FTPS.
+  run az webapp update -g "$RG" -n "$APP" --https-only true -o none
+  run az webapp config set -g "$RG" -n "$APP" --min-tls-version 1.2 --ftps-state Disabled -o none
 done
 
 step "8b. App settings"
