@@ -1,0 +1,44 @@
+{
+  "id": 862,
+  "title": "Toy Story",
+  "release_date": "1995-11-22",
+  "imdb_id": "tt0114709",
+  "overview": "A cowboy doll is threatened by a new spaceman toy.",
+  "tagline": "The adventure takes off!",
+  "runtime": 81,
+  "poster_path": "/poster.jpg",
+  "backdrop_path": "/backdrop.jpg",
+  "genres": [{ "id": 16, "name": "Animation" }, { "id": 35, "name": "Comedy" }],
+  "credits": {
+    "cast": [
+      { "id": 111, "name": "Actor 11", "character": "Role 11", "order": 11, "profile_path": null },
+      { "id": 103, "name": "Actor 3", "character": "Role 3", "order": 3, "profile_path": null },
+      { "id": 100, "name": "Actor 0", "character": "Role 0", "order": 0, "profile_path": "/a0.jpg" },
+      { "id": 109, "name": "Actor 9", "character": "Role 9", "order": 9, "profile_path": null },
+      { "id": 101, "name": "Actor 1", "character": "Role 1", "order": 1, "profile_path": null },
+      { "id": 110, "name": "Actor 10", "character": "Role 10", "order": 10, "profile_path": null },
+      { "id": 102, "name": "Actor 2", "character": "Role 2", "order": 2, "profile_path": null },
+      { "id": 104, "name": "Actor 4", "character": "Role 4", "order": 4, "profile_path": null },
+      { "id": 105, "name": "Actor 5", "character": "Role 5", "order": 5, "profile_path": null },
+      { "id": 106, "name": "Actor 6", "character": "Role 6", "order": 6, "profile_path": null },
+      { "id": 107, "name": "Actor 7", "character": "Role 7", "order": 7, "profile_path": null },
+      { "id": 108, "name": "Actor 8", "character": "Role 8", "order": 8, "profile_path": null }
+    ],
+    "crew": [
+      { "id": 201, "name": "Director Person", "job": "Director", "department": "Directing", "profile_path": "/d.jpg" },
+      { "id": 202, "name": "Producer Person", "job": "Producer", "department": "Production", "profile_path": null },
+      { "id": 203, "name": "Screenplay Person", "job": "Screenplay", "department": "Writing", "profile_path": null },
+      { "id": 204, "name": "Characters Person", "job": "Characters", "department": "Writing", "profile_path": null },
+      { "id": 205, "name": "Novel Person", "job": "Novel", "department": "Writing", "profile_path": null }
+    ]
+  },
+  "videos": {
+    "results": [
+      { "key": "teaser", "site": "YouTube", "type": "Teaser", "official": true, "name": "Teaser", "published_at": "2026-03-01T00:00:00.000Z" },
+      { "key": "recut", "site": "YouTube", "type": "Trailer", "official": true, "name": "Official Countdown Trailer", "published_at": "2026-02-01T00:00:00.000Z" },
+      { "key": "main", "site": "YouTube", "type": "Trailer", "official": true, "name": "Official Trailer", "published_at": "2025-12-01T00:00:00.000Z" },
+      { "key": "fan", "site": "YouTube", "type": "Trailer", "official": false, "name": "Official Trailer", "published_at": "2026-04-01T00:00:00.000Z" },
+      { "key": "dm", "site": "Dailymotion", "type": "Trailer", "official": true, "name": "Official Trailer", "published_at": "2026-05-01T00:00:00.000Z" }
+    ]
+  }
+}

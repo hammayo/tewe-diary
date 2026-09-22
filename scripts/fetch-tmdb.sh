@@ -9,6 +9,9 @@
 #   List:               --list popular|top_rated|now_playing                     -> /movie/{list}
 #   Trending:           --trending [day|week]  (top 10)                          -> /trending/movie/{window}
 #
+# Every mode is followed by an enrichment pass: one /movie/{id}?append_to_response=credits,videos
+# call per movie (overview, tagline, runtime, imdb_id, top-10 cast, director/writers, one trailer).
+#
 # Usage:
 #   scripts/fetch-tmdb.sh [--pages N] [--out PATH]      # default: discover, newest first
 #   scripts/fetch-tmdb.sh --list popular|top_rated|now_playing [--pages N] [--out PATH]
@@ -113,9 +116,11 @@ API="https://api.themoviedb.org/3"
 # Bearer token returns HTTP 401, so pick the scheme from the key's shape.
 if printf '%s' "$TMDB_API_KEY" | grep -q '\.'; then
   AUTH=(-H "Authorization: Bearer $TMDB_API_KEY" -H "accept: application/json")
+  AUTH_HEADER="Authorization: Bearer $TMDB_API_KEY"
   KEY_QS=""
 else
   AUTH=(-H "accept: application/json")
+  AUTH_HEADER=""
   KEY_QS="&api_key=$TMDB_API_KEY"
 fi
 
@@ -144,6 +149,27 @@ fi
 
 # Transform a TMDB list response (stdin) into NDJSON on stdout.
 emit() { jq -c --argjson genres "$GENRE_MAP" -f "$SCRIPT_DIR/helpers/tmdb-to-ndjson.jq"; }
+
+# Enrich every fetched movie with its details, credits and trailer (one /movie/{id} call each,
+# 8 in parallel to stay under TMDB's rate limit), then rewrite $OUT in the details shape.
+# Failed ids are skipped and reported, never fatal (PRD FR-10, D15).
+enrich() {
+  local work total ok
+  work="$(mktemp -d)"
+  jq -r '.tmdb_id' "$OUT" | awk '!seen[$0]++' > "$work/ids.txt"
+  total="$(wc -l < "$work/ids.txt" | tr -d ' ')"
+  echo "Enriching $total movies (details, credits, trailer)..." >&2
+  TMDB_API="$API" TMDB_AUTH_HEADER="$AUTH_HEADER" TMDB_KEY_QS="$KEY_QS" \
+    xargs -P 8 -n 1 "$SCRIPT_DIR/helpers/fetch-tmdb-detail.sh" "$work" < "$work/ids.txt"
+  find "$work" -name '*.json' -print0 \
+    | xargs -0 -r jq -c -f "$SCRIPT_DIR/helpers/tmdb-details-to-ndjson.jq" > "$OUT"
+  ok="$(wc -l < "$OUT" | tr -d ' ')"
+  echo "Enriched $ok/$total movies into $OUT" >&2
+  if [ -s "$work/failed.txt" ]; then
+    echo "Skipped $(wc -l < "$work/failed.txt" | tr -d ' ') movie(s) whose details call failed: $(sort -n "$work/failed.txt" | paste -sd, -)" >&2
+  fi
+  rm -rf "$work"
+}
 
 mkdir -p "$(dirname "$OUT")"
 : > "$OUT"
@@ -185,3 +211,5 @@ case "$MODE" in
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (trending=$TRENDING, top 10)"
     ;;
 esac
+
+enrich
