@@ -1,27 +1,33 @@
 #!/usr/bin/env bash
 #
-# Fetches TMDB movies into NDJSON (one movie per line).
+# Fetches TMDB movies into NDJSON (one movie per line), with their details, credits and trailer.
 #
-# Modes (mutually exclusive):
-#   Discover (default): no args, or any of --year/--genre/--original-language/   -> /discover/movie
-#                       --sort/--min-rating/--min-votes. A bare run defaults to
-#                       --sort primary_release_date.desc --pages 500 (min-rating 6.5, min-votes 50).
-#   List:               --list popular|top_rated|now_playing                     -> /movie/{list}
-#   Trending:           --trending [day|week]  (top 10)                          -> /trending/movie/{window}
-#   Ids:                --ids-file PATH  (skips the list fetch; enriches exactly these ids)
+# Presets (first word) — no TMDB knowledge needed:
+#   scripts/fetch-tmdb.sh                     newest releases (the default)
+#   scripts/fetch-tmdb.sh newest [pages]      newest releases, N pages of 20
+#   scripts/fetch-tmdb.sh classics [minVotes] highest rated, at least minVotes votes (default 1000)
+#   scripts/fetch-tmdb.sh popular             TMDB's popular list (also: top-rated, now-playing)
+#   scripts/fetch-tmdb.sh trending [day|week] what's trending now (top 10)
+#   scripts/fetch-tmdb.sh year 1994 [genre]   one year, optionally one or more genres
+#   scripts/fetch-tmdb.sh genre "Horror,Sci"  one or more genres
+#   scripts/fetch-tmdb.sh language hi         one original language (ISO 639-1)
+#   scripts/fetch-tmdb.sh ids 680 550         exact TMDB ids (or: ids ids.txt)
+#   scripts/fetch-tmdb.sh --help              this list
+#
+# A preset just sets the flags below, and you can still add flags after it, e.g.
+#   scripts/fetch-tmdb.sh classics --pages 50 --min-rating 7
+#
+# Flags (all optional): --pages N --out PATH --year YYYY --genre "A,B" --original-language xx
+#   --sort FIELD --min-rating X --min-votes N --list NAME --trending [day|week] --ids-file PATH
+#   --dry-run (print what would be fetched, then stop)
+#
+# Each run writes Data/tmdb-<what-was-fetched>.ndjson (e.g. tmdb-discover-vote_average.desc-v1000.ndjson,
+# tmdb-list-popular.ndjson, tmdb-trending-week.ndjson), so a new pull never overwrites an earlier one.
+# Override with --out PATH. Load them all with scripts/load-movies.sh (duplicates are collapsed).
 #
 # Every mode is followed by an enrichment pass: one /movie/{id}?append_to_response=credits,videos
 # call per movie (overview, tagline, runtime, imdb_id, top-10 cast, director/writers, one trailer).
 #
-# Usage:
-#   scripts/fetch-tmdb.sh [--pages N] [--out PATH]      # default: discover, newest first
-#   scripts/fetch-tmdb.sh --list popular|top_rated|now_playing [--pages N] [--out PATH]
-#   scripts/fetch-tmdb.sh --year 2024 [--genre "Action,Comedy"] [--original-language en] \
-#                         [--sort primary_release_date.desc] [--min-rating 6.5] \
-#                         [--min-votes 50] [--pages N] [--out PATH]
-#   scripts/fetch-tmdb.sh --trending [day|week] [--out PATH]
-#   scripts/fetch-tmdb.sh --ids-file PATH [--out PATH]   # details only, for the TMDB ids listed one per line
-#                                                        # (used by scripts/enrich-movies.sh)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,7 +37,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LIST=""
 PAGES=500  # TMDB caps discover/list at page 500; requesting more returns HTTP 400
-OUT="$ROOT_DIR/Data/tmdb-movies.ndjson"
+OUT=""   # default: Data/tmdb-<what-was-fetched>.ndjson (see default_out below)
 YEAR=""
 GENRE=""
 ORIG_LANG=""
@@ -40,6 +46,66 @@ MIN_RATING=""
 MIN_VOTES=""
 TRENDING=""
 IDS_FILE=""
+IDS_LABEL=""      # names the output file when ids are given inline
+PRESET=""         # the preset used, so the output file is named after it (not after TMDB's flags)
+DRY_RUN=false
+
+usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; }
+
+# Presets: a friendly first word that just sets the flags below. Anything after it is parsed as usual.
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  newest)
+    shift
+    case "${1:-}" in ''|-*) ;; *) PAGES="$1"; shift ;; esac
+    SORT="primary_release_date.desc"
+    PRESET="newest" ;;
+  classics)
+    shift
+    case "${1:-}" in ''|-*) MIN_VOTES=1000 ;; *) MIN_VOTES="$1"; shift ;; esac
+    SORT="vote_average.desc"
+    PRESET="classics" ;;
+  popular|top-rated|now-playing)
+    LIST="${1//-/_}"; PRESET="$1"; shift ;;
+  trending)
+    shift
+    case "${1:-}" in day|week) TRENDING="$1"; shift ;; *) TRENDING="week" ;; esac
+    PRESET="trending" ;;
+  year)
+    shift
+    YEAR="${1:-}"; shift || true
+    case "${1:-}" in ''|-*) ;; *) GENRE="$1"; shift ;; esac
+    if [ -z "$YEAR" ]; then echo "Usage: scripts/fetch-tmdb.sh year YYYY [genre]" >&2; exit 2; fi
+    PRESET="year" ;;
+  genre)
+    shift
+    GENRE="${1:-}"; shift || true
+    if [ -z "$GENRE" ]; then echo "Usage: scripts/fetch-tmdb.sh genre \"Horror,Thriller\"" >&2; exit 2; fi
+    PRESET="genre" ;;
+  language)
+    shift
+    ORIG_LANG="${1:-}"; shift || true
+    if [ -z "$ORIG_LANG" ]; then echo "Usage: scripts/fetch-tmdb.sh language xx  (ISO 639-1)" >&2; exit 2; fi
+    PRESET="language" ;;
+  ids)
+    shift
+    if [ -f "${1:-}" ]; then
+      IDS_FILE="$1"; shift
+    else
+      # Inline ids: stage them in a temp file, and name the output after the first few.
+      IDS_FILE="$(mktemp)"
+      trap 'rm -f "$IDS_FILE"' EXIT
+      while [ $# -gt 0 ] && printf '%s' "$1" | grep -qE '^[0-9]+$'; do
+        echo "$1" >> "$IDS_FILE"; shift
+      done
+      if [ ! -s "$IDS_FILE" ]; then
+        echo "Usage: scripts/fetch-tmdb.sh ids 680 550   (or: ids ids.txt)" >&2; exit 2
+      fi
+      IDS_LABEL="$(head -3 "$IDS_FILE" | paste -sd- -)"
+      [ "$(wc -l < "$IDS_FILE" | tr -d ' ')" -gt 3 ] && IDS_LABEL="$IDS_LABEL-and-more"
+    fi
+    PRESET="ids" ;;
+esac
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -53,6 +119,8 @@ while [ $# -gt 0 ]; do
     --min-rating)        MIN_RATING="$2"; shift 2 ;;
     --min-votes)         MIN_VOTES="$2"; shift 2 ;;
     --ids-file)          IDS_FILE="$2"; shift 2 ;;
+    --dry-run)           DRY_RUN=true; shift ;;
+    -h|--help)           usage; exit 0 ;;
     --trending)
       if [ "${2:-}" = "day" ] || [ "${2:-}" = "week" ]; then
         TRENDING="$2"; shift 2
@@ -113,6 +181,63 @@ else
   else
     MODE="discover"
   fi
+fi
+
+# Default output file, named after what is being fetched, so a new pull never overwrites an earlier
+# one (e.g. classics next to the newest releases). scripts/load-movies.sh loads them all together.
+# A bare run (no preset, no filters) is exactly what `newest` does, so it gets that file.
+if [ -z "$PRESET" ] && [ "$MODE" = discover ] && [ "$discover_requested" = false ]; then
+  PRESET="newest"
+fi
+
+default_out() {
+  local name
+  # Named after the preset the caller used (tmdb-classics.ndjson), so the file matches the command.
+  # Only a raw-flag run falls through to the mode+filters name.
+  case "$PRESET" in
+    newest)   printf '%s/Data/tmdb-newest.ndjson' "$ROOT_DIR"; return ;;
+    classics) printf '%s/Data/tmdb-classics%s.ndjson' "$ROOT_DIR" \
+                "$([ "${MIN_VOTES:-1000}" = 1000 ] || printf -- '-v%s' "$MIN_VOTES")"; return ;;
+    popular|top-rated|now-playing)
+              printf '%s/Data/tmdb-%s.ndjson' "$ROOT_DIR" "$PRESET"; return ;;
+    trending) printf '%s/Data/tmdb-trending-%s.ndjson' "$ROOT_DIR" "$TRENDING"; return ;;
+    year)     name="year-$YEAR${GENRE:+-$GENRE}" ;;
+    genre)    name="genre-$GENRE" ;;
+    language) name="language-$ORIG_LANG" ;;
+    ids)      name="ids-${IDS_LABEL:-$(basename "${IDS_FILE%.*}")}" ;;
+    *)
+  case "$MODE" in
+    list)     name="list-$LIST" ;;
+    trending) name="trending-$TRENDING" ;;
+    ids)      name="ids-${IDS_LABEL:-$(basename "${IDS_FILE%.*}")}" ;;
+    discover)
+      name="discover-${SORT:-primary_release_date.desc}"
+      [ -n "$YEAR" ]        && name="$name-$YEAR"
+      [ -n "$ORIG_LANG" ]   && name="$name-$ORIG_LANG"
+      [ -n "$GENRE" ]       && name="$name-$GENRE"
+      [ -n "$MIN_RATING" ]  && name="$name-r$MIN_RATING"
+      [ -n "$MIN_VOTES" ]   && name="$name-v$MIN_VOTES"
+      ;;
+  esac ;;
+  esac
+  printf '%s/Data/tmdb-%s.ndjson' "$ROOT_DIR" \
+    "$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g; s/--*/-/g')"
+}
+
+if [ -z "$OUT" ]; then
+  OUT="$(default_out)"
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  printf 'Would fetch: mode=%s' "$MODE" >&2
+  [ -n "$LIST" ]       && printf ' list=%s' "$LIST" >&2
+  [ -n "$TRENDING" ]   && printf ' window=%s' "$TRENDING" >&2
+  [ -n "$IDS_FILE" ]   && printf ' ids=%s (%s)' "$IDS_FILE" "$(grep -c . "$IDS_FILE" || true)" >&2
+  [ "$MODE" = discover ] && printf ' sort=%s year=%s genre=%s lang=%s min-rating=%s min-votes=%s pages=%s' \
+    "${SORT:-primary_release_date.desc}" "${YEAR:-any}" "${GENRE:-any}" "${ORIG_LANG:-any}" \
+    "${MIN_RATING:-6.5}" "${MIN_VOTES:-50}" "$PAGES" >&2
+  printf '\nWould write:  %s\n' "$OUT" >&2
+  exit 0
 fi
 
 # Load .env if present so TMDB_API_KEY is available for local runs.
@@ -220,7 +345,12 @@ case "$MODE" in
   list)
     for ((page=1; page<=PAGES; page++)); do
       printf '\rFetching %s: page %d/%d (%d movies)' "$LIST" "$page" "$PAGES" "$(wc -l < "$OUT")" >&2
-      curl -fsSL "${AUTH[@]}" "$API/movie/$LIST?language=en-US&page=$page${KEY_QS}" | emit >> "$OUT"
+      response="$(curl -fsSL "${AUTH[@]}" "$API/movie/$LIST?language=en-US&page=$page${KEY_QS}")"
+      printf '%s' "$response" | emit >> "$OUT"
+      if [ "$(printf '%s' "$response" | jq '.results | length')" -eq 0 ]; then
+        printf '\nNo more results after page %d; stopping early.\n' "$page" >&2
+        break
+      fi
     done
     printf '\n' >&2
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (list=$LIST, pages=$PAGES)"
@@ -237,7 +367,13 @@ case "$MODE" in
       [ -n "$WITH_GENRES" ] && url="$url&with_genres=$WITH_GENRES"
       [ -n "$ORIG_LANG" ]   && url="$url&with_original_language=$ORIG_LANG"
       url="$url$KEY_QS"
-      curl -fsSL "${AUTH[@]}" "$url" | emit >> "$OUT"
+      response="$(curl -fsSL "${AUTH[@]}" "$url")"
+      printf '%s' "$response" | emit >> "$OUT"
+      # TMDB keeps serving empty pages past the last result; stop instead of burning requests.
+      if [ "$(printf '%s' "$response" | jq '.results | length')" -eq 0 ]; then
+        printf '\nNo more results after page %d; stopping early.\n' "$page" >&2
+        break
+      fi
     done
     printf '\n' >&2
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (discover: year=${YEAR:-any}, genre=${GENRE:-any}, lang=${ORIG_LANG:-any}, sort=$SORT, min-rating=$MIN_RATING, min-votes=$MIN_VOTES, pages=$PAGES)"

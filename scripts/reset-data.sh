@@ -9,7 +9,7 @@
 # Usage:
 #   scripts/reset-data.sh                  # empty every data table (schema and container kept)
 #   scripts/reset-data.sh --volume         # also delete the Postgres volume, then restart the stack
-#   scripts/reset-data.sh --reload         # after wiping: fetch fresh TMDB data and load it
+#   scripts/reset-data.sh --reload         # after wiping: fetch the newest releases, then load every Data/*.ndjson
 #   scripts/reset-data.sh --volume --reload
 #   scripts/reset-data.sh --yes ...        # skip the confirmation prompt (for scripting)
 set -euo pipefail
@@ -46,7 +46,7 @@ else
   echo "This deletes every movie, genre, rating, metadata, details and credits row (db not reachable, so no counts)."
 fi
 $VOLUME && echo "It also deletes the Postgres volume, then restarts the stack."
-$RELOAD && echo "Afterwards it fetches fresh TMDB data and loads it."
+$RELOAD && echo "Afterwards it fetches the newest releases and loads every Data/*.ndjson (files are kept)."
 echo "There is no undo."
 
 if [ "$ASSUME_YES" != true ]; then
@@ -68,7 +68,10 @@ else
 fi
 
 if [ "$RELOAD" = true ]; then
-  # A fresh fetch, not the existing file: the old NDJSON may predate the details fields.
-  "$SCRIPT_DIR/fetch-tmdb.sh"
+  # Fetch the newest releases fresh (an existing file may predate the details fields), then load every
+  # Data/*.ndjson — so classics, per-year and by-id fetches from earlier come back too, not just the
+  # newest set. The files themselves are never deleted by this script.
+  echo "Fetching the newest releases, then loading every Data/*.ndjson..."
+  "$SCRIPT_DIR/fetch-tmdb.sh" newest
   "$SCRIPT_DIR/load-movies.sh"
 fi
