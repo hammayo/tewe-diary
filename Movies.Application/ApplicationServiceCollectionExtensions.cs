@@ -12,6 +12,7 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddSingleton<IMovieRepository, MovieRepository>();
+        services.AddSingleton<IMovieDetailsRepository, MovieDetailsRepository>();
         services.AddSingleton<IMovieService, MovieService>();
         services.AddSingleton<IRatingRepository, RatingRepository>();
         services.AddSingleton<IRatingService, RatingService>();        

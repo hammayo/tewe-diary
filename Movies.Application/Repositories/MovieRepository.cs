@@ -54,13 +54,15 @@ public class MovieRepository : IMovieRepository
             new CommandDefinition("""
             select m.*, 
             round(avg(r.rating), 1) as rating, 
-            myr.rating as userrating 
+            myr.rating as userrating,
+            md.poster_path as posterpath
             from movies m
             left join ratings r on m.id = r.movieid
             left join ratings myr on m.id = myr.movieid
                                  and myr.userid = @userId
+            left join movie_details md on m.id = md.movieid
             where id = @id
-            group by id, userrating
+            group by id, userrating, md.poster_path
             """, new { id, userId }, cancellationToken: token));
 
         if (movie is null)
@@ -90,13 +92,15 @@ public class MovieRepository : IMovieRepository
             new CommandDefinition("""
             select m.*, 
             round(avg(r.rating), 1) as rating, 
-            myr.rating as userrating
+            myr.rating as userrating,
+            md.poster_path as posterpath
             from movies m
             left join ratings r on m.id = r.movieid
             left join ratings myr on m.id = myr.movieid
                                  and myr.userid = @userId
+            left join movie_details md on m.id = md.movieid
             where slug = @slug
-            group by id, userrating
+            group by id, userrating, md.poster_path
             """, new { slug, userId }, cancellationToken: token));
 
         if (movie is null)
@@ -135,15 +139,17 @@ public class MovieRepository : IMovieRepository
             select m.*, 
                    string_agg(distinct g.name, ',') as genres , 
                    round(avg(r.rating), 1) as rating, 
-                   myr.rating as userrating
-            from movies m 
+                   myr.rating as userrating,
+                   md.poster_path as posterpath
+            from movies m
             left join genres g on m.id = g.movieid
             left join ratings r on m.id = r.movieid
             left join ratings myr on m.id = myr.movieid
                 and myr.userid = @userId
+            left join movie_details md on m.id = md.movieid
             where (@title is null or m.title like ('%' || @title || '%'))
             and  (@yearofrelease is null or m.yearofrelease = @yearofrelease)
-            group by id, userrating {orderClause}
+            group by id, userrating, md.poster_path {orderClause}
             limit @pageSize
             offset @pageOffset
             """, new
@@ -162,6 +168,7 @@ public class MovieRepository : IMovieRepository
             YearOfRelease = x.yearofrelease,
             Rating = (float?)x.rating,
             UserRating = (int?)x.userrating,
+            PosterPath = (string?)x.posterpath,
             Genres = x.genres is string genres
                 ? Enumerable.ToList(genres.Split(','))
                 : new List<string>()

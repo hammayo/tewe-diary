@@ -1,4 +1,5 @@
 using Movies.Application.Database;
+using Movies.Application.Database.Import;
 using Movies.Application.Models;
 using Movies.Application.Repositories;
 using Movies.Tests.Shared;
@@ -144,6 +145,31 @@ public class MovieRepositoryTests
 
         // Assert
         Assert.Equal(expected, years);
+    }
+
+    [Theory]
+    [InlineData("all")]
+    [InlineData("id")]
+    [InlineData("slug")]
+    public async Task reads_return_the_tmdb_poster_path(string read)
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var factory = new NpgsqlConnectionFactory(_fx.ConnectionString);
+        await new MovieImporter(factory).ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+        var repository = new MovieRepository(factory);
+        var imported = await repository.GetBySlugAsync(TmdbFixtures.OdysseySlug);
+
+        // Act
+        var movie = read switch
+        {
+            "all" => (await repository.GetAllAsync(Options())).Single(),
+            "id" => await repository.GetByIdAsync(imported!.Id),
+            _ => await repository.GetBySlugAsync(TmdbFixtures.OdysseySlug)
+        };
+
+        // Assert
+        Assert.Equal("/poster.jpg", movie!.PosterPath);
     }
 
     private static Movie NewMovie(string title, int year, params string[] genres) =>
