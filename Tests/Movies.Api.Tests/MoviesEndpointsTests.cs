@@ -376,6 +376,44 @@ public class MoviesEndpointsTests
         Assert.Null(item.Details);
     }
 
+    [Fact]
+    public async Task list_items_carry_a_self_link_that_resolves_to_the_movie()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var created = await CreateMovieAsync();
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var movies = await (await client.GetAsync(MoviesUrl)).ReadJsonAsync<MoviesResponse>();
+        var self = movies!.Items.Single().Links!.Single();
+        var followed = await client.GetAsync(self.Href);
+        var sameMovie = await followed.ReadJsonAsync<MovieResponse>();
+
+        // Assert
+        Assert.Equal("self", self.Rel);
+        Assert.Equal("GET", self.Type);
+        Assert.Equal($"http://localhost/api/v1/movies/{created.Slug}", self.Href);
+        Assert.Equal(HttpStatusCode.OK, followed.StatusCode);
+        Assert.Equal(created.Id, sameMovie!.Id);
+    }
+
+    [Fact]
+    public async Task single_movie_response_has_no_links()
+    {
+        // Arrange
+        // The caller already has the movie's URL, so a self link there would be noise.
+        await _fx.ResetAsync();
+        var created = await CreateMovieAsync();
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var movie = await (await client.GetAsync($"{MoviesUrl}/{created.Id}")).ReadJsonAsync<MovieResponse>();
+
+        // Assert
+        Assert.Null(movie!.Links);
+    }
+
     private static CreateMovieRequest YearOf(int year)
     {
         var request = TestData.CreateMovieRequest.Generate();

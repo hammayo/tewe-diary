@@ -99,6 +99,17 @@ the token via `CustomClaims` (see [_getting-started.md](_getting-started.md)).
 
 Responses are paged (`PagedResponse`): items plus `page`, `pageSize`, and `total`.
 
+Each item carries a HAL `links` array with its own URL, so a client can follow it instead of building
+the path:
+
+```json
+"links": [ { "href": "https://localhost:7001/api/v1/movies/the-odyssey-2026", "rel": "self", "type": "GET" } ]
+```
+
+`href` is absolute and generated from the route (so the version segment is always right); `type` is the
+HTTP method to use on it. The single-movie response has **no** `links`: the caller already has that URL.
+`links` is omitted entirely when there is no link to give.
+
 Each list item includes `posterUrl` but always has `details: null`. That's by design, so a page of
 movies doesn't need an extra details query per movie. To get a movie's overview, tagline, trailer and
 credits, request it by id or slug: `GET /api/v1/movies/{idOrSlug}` (see

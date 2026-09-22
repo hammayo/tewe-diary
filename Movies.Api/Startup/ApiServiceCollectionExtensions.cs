@@ -50,6 +50,9 @@ public static class ApiServiceCollectionExtensions
     {
         services.Configure<TmdbImageOptions>(config.GetSection(TmdbImageOptions.SectionName));
         services.AddSingleton<TmdbUrlBuilder>();
+        // MovieLinkBuilder resolves hrefs against the current request.
+        services.AddHttpContextAccessor();
+        services.AddSingleton<MovieLinkBuilder>();
 
         return services;
     }

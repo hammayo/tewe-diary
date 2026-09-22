@@ -28,7 +28,7 @@ public static class ContractMapping
         };
     }
 
-    public static MovieResponse MapToResponse(this Movie movie, TmdbUrlBuilder urls)
+    public static MovieResponse MapToResponse(this Movie movie, TmdbUrlBuilder urls, MovieLinkBuilder? links)
     {
         return new MovieResponse
         {
@@ -40,16 +40,17 @@ public static class ContractMapping
             YearOfRelease = movie.YearOfRelease,
             Genres = movie.Genres,
             PosterUrl = urls.Poster(movie.PosterPath),
-            Details = movie.Details?.MapToResponse(urls)
+            Details = movie.Details?.MapToResponse(urls),
+            Links = links?.Self(movie.Slug) is { } self ? [self] : null
         };
     }
 
     public static MoviesResponse MapToResponse(this IEnumerable<Movie> movies, TmdbUrlBuilder urls,
-        int page, int pageSize, int totalCount)
+        MovieLinkBuilder links, int page, int pageSize, int totalCount)
     {
         return new MoviesResponse
         {
-            Items = movies.Select(movie => movie.MapToResponse(urls)),
+            Items = movies.Select(movie => movie.MapToResponse(urls, links)),
             Page = page,
             PageSize = pageSize,
             Total = totalCount

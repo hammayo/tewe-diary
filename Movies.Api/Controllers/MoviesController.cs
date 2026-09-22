@@ -17,12 +17,15 @@ public class MoviesController : ControllerBase
     private readonly IMovieService _movieService;
     private readonly IOutputCacheStore _outputCacheStore;
     private readonly TmdbUrlBuilder _urls;
+    private readonly MovieLinkBuilder _links;
 
-    public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore, TmdbUrlBuilder urls)
+    public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore,
+        TmdbUrlBuilder urls, MovieLinkBuilder links)
     {
         _movieService = movieService;
         _outputCacheStore = outputCacheStore;
         _urls = urls;
+        _links = links;
     }
     
     [Authorize(AuthConstants.TrustedMemberPolicyName)]
@@ -35,7 +38,7 @@ public class MoviesController : ControllerBase
         var movie = request.MapToMovie();
         await _movieService.CreateAsync(movie, token);
         await _outputCacheStore.EvictByTagAsync("movies", token);
-        var movieResponse = movie.MapToResponse(_urls);
+        var movieResponse = movie.MapToResponse(_urls, _links);
         return CreatedAtAction(nameof(GetV1), new { idOrSlug = movie.Id }, movieResponse);
     }
     
@@ -56,7 +59,7 @@ public class MoviesController : ControllerBase
             return NotFound();
         }
 
-        var response = movie.MapToResponse(_urls);
+        var response = movie.MapToResponse(_urls, null);
         return Ok(response);
     }
     
@@ -71,7 +74,7 @@ public class MoviesController : ControllerBase
             .WithUser(userId);
         var movies = await _movieService.GetAllAsync(options, token);
         var movieCount = await _movieService.GetCountAsync(options.Title, options.YearOfRelease, token);
-        var moviesResponse = movies.MapToResponse(_urls, options.Page, options.PageSize, movieCount);
+        var moviesResponse = movies.MapToResponse(_urls, _links, options.Page, options.PageSize, movieCount);
         return Ok(moviesResponse);
     }
     
@@ -93,7 +96,7 @@ public class MoviesController : ControllerBase
         }
 
         await _outputCacheStore.EvictByTagAsync("movies", token);
-        var response = updatedMovie.MapToResponse(_urls);
+        var response = updatedMovie.MapToResponse(_urls, _links);
         return Ok(response);
     }
 

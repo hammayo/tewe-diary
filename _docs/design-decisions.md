@@ -18,6 +18,7 @@ them. Lightweight ADR style: **decision → rationale → revisit when**.
 11. [Deployment hosting and cost (Basic B1, no slots)](#11-deployment-hosting-and-cost-basic-b1-no-slots)
 12. [Getting to $0 (free-tier options and limitations)](#12-getting-to-0-free-tier-options-and-limitations)
 13. [Deployment gotchas fixed (ACR pull, DB grants, KV propagation)](#13-deployment-gotchas-fixed-acr-pull-db-grants-kv-propagation)
+14. [HATEOAS: self links only, absolute, generated from routes](#14-hateoas-self-links-only-absolute-generated-from-routes)
 
 ## 1. One `Movies.Application` project, not separate Domain/Application/Infrastructure
 
@@ -222,3 +223,21 @@ imperative CLI; private networking (Private Endpoint/VNet) instead of public Pos
 managing Flexible Server firewall rules + Web App config has no tidy built-in least-privilege set,
 and getting it wrong silently breaks the pipeline); App Insights / diagnostics; RS256 + JWKS for
 JWT (see #5). These are intentional demo-tier trade-offs, not oversights.
+
+## 14. HATEOAS: self links only, absolute, generated from routes
+
+**Decision.** Responses that extend `HalResponse` carry a HAL-style `links` array. Today that is one
+`self` link per movie (`rel: self`, `type: GET`) on **list items**, so a client can jump from a list entry to
+the movie. The single-movie response carries none: the caller already has that URL.
+Hrefs are absolute and built by `MovieLinkBuilder` from ASP.NET's `LinkGenerator`, not concatenated
+strings. `links` is omitted when no link could be generated.
+
+**Rationale.** A client can follow a movie's own URL instead of knowing how to build
+`/api/v{version}/movies/{idOrSlug}`, and `LinkGenerator` keeps the href correct, version segment
+included, if routes ever change.
+
+**Not done yet, deliberately.** No `next`/`prev` page links (the list already returns `page`,
+`pageSize`, `total` and `hasNextPage`), and no action links (`update`, `delete`, `rate`) — those depend
+on the caller's claims, and advertising them unconditionally would be misleading. Both are easy to add:
+`PagedResponse<T>` would extend `HalResponse` for page links, and `MovieLinkBuilder` would gain the
+action links.

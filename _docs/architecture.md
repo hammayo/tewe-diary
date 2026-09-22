@@ -46,6 +46,8 @@ store ever justifies it (see [design-decisions.md](design-decisions.md)):
 TMDB details are read-only from the API's point of view.
 - `MovieDetailsRepository` reads them, and `MovieService` attaches them to single-movie reads.
 - `MovieRepository` joins `movie_details` for the poster on every read.
+- Also at the edge, `Movies.Api/Mapping/MovieLinkBuilder` adds each movie's HAL `self` link, built
+  from the route with `LinkGenerator` (see [design-decisions.md](design-decisions.md#14-hateoas-self-links-only-absolute-generated-from-routes)).
 - At the edge, `Movies.Api/Mapping/TmdbUrlBuilder` turns the stored paths and keys into image and
   trailer URLs, using the `Tmdb:Images` options.
 
