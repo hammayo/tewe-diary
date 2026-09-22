@@ -68,6 +68,11 @@ Full setup, config, ports, and a token-and-create-a-movie `curl` walkthrough are
 | [Workflows reference](.github/workflows/_README.md)   | Operational detail for the GitHub Actions workflows                      |
 | [TMDB import runbook](_docs/tmdb-import.md)           | Data pipeline: fetch → transform → load                                  |
 
+## Attribution
+
+Movie data and images come from [TMDB](https://www.themoviedb.org).
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
 ## Roadmap
 
 - **Minimal API v2** — a parallel `v2` surface built with **.NET Minimal APIs** will land in

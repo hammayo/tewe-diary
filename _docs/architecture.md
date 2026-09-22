@@ -34,6 +34,21 @@ store ever justifies it (see [design-decisions.md](design-decisions.md)):
 | `Services/`, `Validators/`   | Application    | Use cases, orchestration, `FluentValidation` rules |
 | `Repositories/`, `Database/` | Infrastructure | Dapper / Npgsql / FluentMigrator                   |
 
+### Schema
+
+| Table                         | Owner               | Notes                                                                                                |
+|-------------------------------|---------------------|------------------------------------------------------------------------------------------------------|
+| `movies`, `genres`, `ratings` | API (CRUD) + import | Unchanged by the TMDB details work                                                                   |
+| `movie_metadata`              | import              | `tmdb_id` (unique) and `imdb_id` (non-unique index), plus the enriched TMDB `raw`                    |
+| `movie_details`               | import (M0002)      | 1:1 with TMDB movies: overview, tagline, runtime, poster/backdrop paths, trailer site/key/name       |
+| `movie_credits`               | import (M0002)      | Director(s), writers and top-10 cast, in order. `tmdb_person_id` is kept for a future `people` table |
+
+TMDB details are read-only from the API's point of view.
+- `MovieDetailsRepository` reads them, and `MovieService` attaches them to single-movie reads.
+- `MovieRepository` joins `movie_details` for the poster on every read.
+- At the edge, `Movies.Api/Mapping/TmdbUrlBuilder` turns the stored paths and keys into image and
+  trailer URLs, using the `Tmdb:Images` options.
+
 ## Request pipeline (Movies.Api)
 
 ```

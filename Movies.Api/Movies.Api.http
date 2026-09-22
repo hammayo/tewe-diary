@@ -5,6 +5,8 @@
 @apiHost = https://localhost:5001
 @identityHost = https://localhost:5003
 @apiKey = dev-api-key
+# A TMDB-imported movie (has details). Any slug from "Get all movies" works.
+@tmdbSlug = the-odyssey-2026
 
 ### Generate a JWT (admin + trusted so every endpoint is reachable).
 # @name login
@@ -39,11 +41,21 @@ Authorization: Bearer {{token}}
 @movieSlug = {{createMovie.response.body.$.slug}}
 
 ### Get all movies (anonymous). Supports title / year / sortBy / page / pageSize.
+### Each item has posterUrl (TMDB movies), but details is always null in the list, by design.
 GET {{apiHost}}/api/v1/movies?page=1&pageSize=10&sortBy=-yearOfRelease
 Accept: application/json
 
-### Get a single movie by id or slug (anonymous).
+### Get a single movie by id or slug (anonymous). This one was just created, so it's a manual
+### movie: posterUrl and details are null.
 GET {{apiHost}}/api/v1/movies/{{movieId}}
+Accept: application/json
+
+### Get a TMDB movie with its details (anonymous). The response adds:
+###   posterUrl
+###   details: tmdbId, imdbId, overview, tagline, runtimeMinutes, backdropUrl,
+###            trailer { site, key, name, url, embedUrl },
+###            directors / writers (role = job) / cast (top 10, role = character), each with profileUrl
+GET {{apiHost}}/api/v1/movies/{{tmdbSlug}}
 Accept: application/json
 
 ### Update the movie (Trusted).

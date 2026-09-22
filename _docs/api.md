@@ -24,6 +24,44 @@ Interactive docs: Swagger UI at `/swagger` (Development only), one document per 
 
 Writes evict the movie output-cache tag, so cached reads stay correct after a mutation.
 
+### TMDB fields on movie responses
+
+`MovieResponse` has two nullable TMDB fields, both added without breaking existing clients:
+
+| Call                                   | `posterUrl`                  | `details`                   |
+|----------------------------------------|------------------------------|-----------------------------|
+| `GET /movies/{idOrSlug}`, TMDB movie   | URL or `null`                | object                      |
+| `GET /movies/{idOrSlug}`, manual movie | `null`                       | `null`                      |
+| `GET /movies` (list)                   | URL or `null`                | `null` (use the single GET) |
+| `POST` / `PUT` responses               | `null` (echo of the request) | `null`                      |
+
+```json
+{
+  "id": "…", "title": "The Odyssey", "slug": "the-odyssey-2026", "yearOfRelease": 2026,
+  "genres": ["Adventure", "Action", "Fantasy"], "rating": null, "userRating": null,
+  "posterUrl": "https://image.tmdb.org/t/p/w500/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+  "details": {
+    "tmdbId": 1368337, "imdbId": "tt33764258",
+    "overview": "Odysseus, the legendary King of Ithaca, embarks on …",
+    "tagline": "Defy the gods.", "runtimeMinutes": 173,
+    "backdropUrl": "https://image.tmdb.org/t/p/w1280/RMXG8myu1aGlNUsRjtxzmpdMK0.jpg",
+    "trailer": {
+      "site": "YouTube", "key": "Mzw2ttJD2qQ", "name": "Official Trailer",
+      "url": "https://www.youtube.com/watch?v=Mzw2ttJD2qQ",
+      "embedUrl": "https://www.youtube.com/embed/Mzw2ttJD2qQ"
+    },
+    "directors": [{ "tmdbPersonId": 525, "name": "Christopher Nolan", "role": null, "profileUrl": "…" }],
+    "writers":   [{ "tmdbPersonId": 525, "name": "Christopher Nolan", "role": "Writer", "profileUrl": "…" }],
+    "cast":      [{ "tmdbPersonId": 1892, "name": "Matt Damon", "role": "Odysseus", "profileUrl": "…" }]
+  }
+}
+```
+
+- `cast` holds up to 10 members in billing order, and `role` is the character name.
+- For writers, `role` is the job (Screenplay, Writer, Story, Novel or Author). Directors have `role: null`.
+- Image sizes come from `Tmdb:Images` in `appsettings.json`.
+- This product uses the TMDB API but is not endorsed or certified by TMDB.
+
 ## Authorization model
 
 Three tiers, enforced with ASP.NET Core policies, plus an API-key filter for machine/ops access:
@@ -32,7 +70,7 @@ Three tiers, enforced with ASP.NET Core policies, plus an API-key filter for mac
  anonymous ──▶ GET  /api/v1/movies                        (list, cached)
                GET  /api/v1/movies/{idOrSlug}             (read, cached)
 
- any JWT ─────▶ PUT/DELETE /api/v1/movies/{id}/ratings    (rate / un-rate)
+ any JWT ────▶ PUT/DELETE /api/v1/movies/{id}/ratings     (rate / un-rate)
                GET         /api/v1/ratings/me             (my ratings)
 
  "Trusted" ──▶ POST /api/v1/movies                        (create)
@@ -60,6 +98,11 @@ the token via `CustomClaims` (see [_getting-started.md](_getting-started.md)).
 | `pageSize` | int    | `10`     | Items per page                                                |
 
 Responses are paged (`PagedResponse`): items plus `page`, `pageSize`, and `total`.
+
+Each list item includes `posterUrl` but always has `details: null`. That's by design, so a page of
+movies doesn't need an extra details query per movie. To get a movie's overview, tagline, trailer and
+credits, request it by id or slug: `GET /api/v1/movies/{idOrSlug}` (see
+[TMDB fields on movie responses](#tmdb-fields-on-movie-responses)).
 
 ## Error contract
 

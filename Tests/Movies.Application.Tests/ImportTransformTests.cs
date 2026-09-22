@@ -193,6 +193,33 @@ public class ImportTransformTests
     }
 
     [Fact]
+    public async Task import_reports_staging_progress_then_the_transform_and_its_summary()
+    {
+        // Arrange
+        var (_, importer) = await FreshDbAsync();
+        var reports = new List<ImportProgress>();
+        var progress = new RecordingProgress(reports);
+
+        // Act
+        await importer.ImportAsync(FixtureLines(), progress);
+
+        // Assert
+        var lastStaging = reports.Last(r => !r.Transforming);
+        var firstTransform = reports.First(r => r.Transforming);
+        var notices = reports.Where(r => r.Notice is not null).Select(r => r.Notice).ToArray();
+        Assert.Equal(2, lastStaging.Staged);
+        Assert.Equal(2, firstTransform.Staged);
+        Assert.True(reports.IndexOf(lastStaging) < reports.IndexOf(firstTransform));
+        Assert.Equal(new[] { "Import: 2 inserted, 0 refreshed, 0 skipped (slug collision)" }, notices);
+    }
+
+    // Synchronous IProgress (Progress<T> posts to the thread pool, which would make the order racy).
+    private sealed class RecordingProgress(List<ImportProgress> reports) : IProgress<ImportProgress>
+    {
+        public void Report(ImportProgress value) => reports.Add(value);
+    }
+
+    [Fact]
     public async Task import_of_a_details_payload_stores_details_credits_trailer_and_imdb_id()
     {
         // Arrange

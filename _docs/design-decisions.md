@@ -151,11 +151,11 @@ Truly $0-forever isn't achievable on this *exact* Azure stack, because: Linux Ap
 perpetual free tier** (new accounts get 12 months free, then paid); and **ACR Basic isn't free**.
 The options, with their trade-offs:
 
-| Option | How | Cost | Limitation |
-|--------|-----|------|------------|
-| **Local Docker** (recommended default) | `bash scripts/stack-up.sh` | $0, no cloud | No public URL; demo via screenshots/GIF |
-| **Temporary Azure** | Current design + new-account **$200/30-day credit** and **12-month free Postgres**; tear down after | $0 out-of-pocket while within credit | Not permanent; must `az group delete` to avoid later charges |
-| **$0 public (different stack)** | **Azure Container Apps** (consumption free grant + scale-to-zero) + **GitHub Container Registry** (free public images) + free managed Postgres (**Neon**/**Supabase**) + **no Key Vault** (config via env/secrets) | ~$0 for low traffic | Real rework of `deploy.yml` + `azure-setup.sh`; no longer "App Service"; cold starts from scale-to-zero; free DB size caps |
+| Option                                 | How                                                                                                                                                                                                                | Cost                                 | Limitation                                                                                                                 |
+|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| **Local Docker** (recommended default) | `bash scripts/stack-up.sh`                                                                                                                                                                                         | $0, no cloud                         | No public URL; demo via screenshots/GIF                                                                                    |
+| **Temporary Azure**                    | Current design + new-account **$200/30-day credit** and **12-month free Postgres**; tear down after                                                                                                                | $0 out-of-pocket while within credit | Not permanent; must `az group delete` to avoid later charges                                                               |
+| **$0 public (different stack)**        | **Azure Container Apps** (consumption free grant + scale-to-zero) + **GitHub Container Registry** (free public images) + free managed Postgres (**Neon**/**Supabase**) + **no Key Vault** (config via env/secrets) | ~$0 for low traffic                  | Real rework of `deploy.yml` + `azure-setup.sh`; no longer "App Service"; cold starts from scale-to-zero; free DB size caps |
 
 **Decision (current).** Keep the App Service B1 design (see #11) and treat **local Docker** as the
 default $0 demo path, with **temporary Azure under the free credit** to show it live. The

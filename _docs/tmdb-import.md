@@ -1,8 +1,9 @@
 # TMDB Import Runbook
 
-Populate `movies`, `genres`, and `movie_metadata` from TMDB. The `ratings`
-table is never touched. Imports are idempotent (deduped on `tmdb_id`), so
-re-running only adds movies not already imported.
+Populate `movies`, `genres`, `movie_metadata` (incl. `imdb_id`), `movie_details`
+(overview, tagline, runtime, poster/backdrop, trailer) and `movie_credits`
+(director(s), core writers, top-10 cast) from TMDB. The `ratings` table is never
+touched. Imports are idempotent (deduped on `tmdb_id`).
 
 ## Pipeline overview
 
@@ -11,7 +12,8 @@ transform** is the single source of truth — embedded in `Movies.Application` f
 CLI path and shared with the psql ops path (see [design-decisions.md](design-decisions.md#4-the-import-transform-is-embedded-shared-with-the-ops-path)).
 
 ```
-TMDB API ──fetch-tmdb.sh (curl + jq)──▶ Data/tmdb-movies.ndjson
+TMDB API ──fetch-tmdb.sh (list/discover/trending, then enrich: one
+          /movie/{id}?append_to_response=credits,videos per movie)──▶ Data/tmdb-movies.ndjson
                                               │
                     ┌─────────────────────────┴─────────────────────────┐
                     ▼                                                   ▼
@@ -19,13 +21,38 @@ TMDB API ──fetch-tmdb.sh (curl + jq)──▶ Data/tmdb-movies.ndjson
          staging → helpers/import-transform.sql)              (embedded transform)
                     └─────────────────────────┬─────────────────────────┘
                                               ▼
-                                     movies + genres (upsert by id,
-                                     slug-collision-safe)
+                                     movies + genres + movie_metadata +
+                                     movie_details + movie_credits
+                                     (upsert by id, slug-collision-safe)
 ```
 
+### Enrichment (details, credits, trailer)
+
+After the chosen mode writes its list, `fetch-tmdb.sh` always enriches every movie:
+
+- **One call per movie:** `helpers/fetch-tmdb-detail.sh` runs 8 in parallel through `xargs -P 8`,
+  with `curl --retry 5` on 429/5xx. A full run is about 10k calls and takes a few minutes.
+- **Trimmed before storage:** `helpers/tmdb-details-to-ndjson.jq` keeps the top 10 cast, the
+  director(s), and writers with job Screenplay, Writer, Story, Novel or Author. That's about
+  3.5 KB per movie against about 86 KB untrimmed.
+- **One trailer is chosen:**
+  1. YouTube or Vimeo only
+  2. `Trailer`, falling back to `Teaser`
+  3. official first
+  4. a video named exactly "Official Trailer" first
+  5. newest first
+- **Failures don't stop the run:** a movie whose details call fails (a 404, or retries used up)
+  is skipped. The script ends with `Skipped N movie(s) … <ids>` and still exits 0.
+
+Test the jq step with `bash scripts/tests/test_tmdb_details_transform.sh`.
+
 ```bash
-bash scripts/fetch-tmdb.sh                 # writes Data/tmdb-movies.ndjson (needs a TMDB API key)
-bash scripts/load-movies.sh                # loads it into the running Docker db via psql
+bash scripts/fetch-tmdb.sh                 # 1. fetch movies + details into Data/tmdb-movies.ndjson (needs a TMDB API key)
+bash scripts/load-movies.sh [file.ndjson]  # 2. load it (default Data/tmdb-movies.ndjson) into the running Docker db via psql,
+                                           #    showing step progress, the import summary and details coverage
+bash scripts/enrich-movies.sh [--all]      # shortcut for movies already in the db: fetch details for those missing them,
+                                           #    then load (--all: refresh every one)
+bash scripts/reset-data.sh [--volume] [--reload]   # start fresh: delete every movie and rating (asks first)
 # or, via the CLI tool:
 dotnet run --project Ops.Tools/Movies.DbTool -- import Data/tmdb-movies.ndjson
 # schema migrations (same CLI):
@@ -44,11 +71,13 @@ the shape and uses the correct auth scheme automatically.
 
 ## 2. Fetch (on demand)
 
-`fetch-tmdb.sh` has three mutually-exclusive modes. All modes write NDJSON to
-`Resources/tmdb-movies.ndjson` (override with `--out PATH`) and paginate with
-`--pages N` (20 movies per page; trending is fixed at 10).
+`fetch-tmdb.sh` has four mutually exclusive modes. They all write NDJSON to
+`Data/tmdb-movies.ndjson` (override with `--out PATH`). A bare run is discover mode, newest first,
+up to 500 pages. List and discover paginate with `--pages N` (20 movies per page); trending is fixed
+at 10. Every mode then enriches each movie with its details (see
+[Enrichment](#enrichment-details-credits-trailer)).
 
-### List mode (default)
+### List mode
 
     scripts/fetch-tmdb.sh --list popular --pages 5
 
@@ -99,17 +128,41 @@ recency, or raise `--min-rating`/`--min-votes` to prioritise quality. An unknown
 Returns the current top 10 trending movies. Discover/list filters cannot be
 combined with `--trending`.
 
+### Ids mode (details only)
+
+    scripts/fetch-tmdb.sh --ids-file ids.txt --out /tmp/enriched.ndjson
+
+Skips the list call and fetches details for exactly the TMDB ids listed one per line in `ids.txt`.
+It can't be combined with the other modes. `scripts/enrich-movies.sh` uses it (see §4).
+
 ## 3. Import into the running db container
 
-The db runs in Docker and no host `psql` client is required. Copy the NDJSON,
-the transform, and the runner into the container, then run the runner with psql
-inside the container:
+The simplest way is the loader script. No host `psql` client is needed:
+
+    scripts/load-movies.sh                     # Data/tmdb-movies.ndjson
+    scripts/load-movies.sh /path/to/file.ndjson
+
+It shows its progress, and on failure prints psql's error and exits 1 (nothing is committed):
+
+    [1/3] Copying 9781 movies (9781 with details) + loaders into the db container...
+    [2/3] Importing in one transaction (stage, upsert movies/genres/metadata, details, credits)...
+      running · 9s elapsed
+      Import: 0 inserted, 9781 refreshed, 0 skipped (slug collision)
+    [3/3] TMDB movies with details: 10009 / 10009
+    Done in 21s.
+
+The import is one transaction, so there's no per-row count; it shows the elapsed time instead. The
+.NET path (`dotnet run --project Ops.Tools/Movies.DbTool -- import <file>`) stages lines one at a time,
+so it does show a count: `n/total (%) · elapsed · ETA`, updated every 250 lines.
+
+What the script does, if you ever need to do it by hand: copy the NDJSON, the transform and the
+runner into the container, then run the runner with psql inside it.
 
     # load POSTGRES_* from .env into the shell
     set -a; . ./.env; set +a
 
     CID=$(docker compose ps -q db)
-    docker cp Resources/tmdb-movies.ndjson "$CID":/tmp/tmdb-movies.ndjson
+    docker cp Data/tmdb-movies.ndjson "$CID":/tmp/tmdb-movies.ndjson
     docker cp scripts/helpers/import-transform.sql "$CID":/tmp/import-transform.sql
     docker cp scripts/helpers/import-movies.sql    "$CID":/tmp/import-movies.sql
 
@@ -117,14 +170,74 @@ inside the container:
       psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
       -f /tmp/import-movies.sql
 
-The schema (including `movie_metadata`) is created automatically the first time
-`Movies.Api` starts (`DbInitializer`); ensure the API has run at least once, or
-the tables already exist, before importing.
+The schema is owned by the FluentMigrator migrations. `Movies.Api` applies them on boot locally;
+otherwise run `dotnet run --project Ops.Tools/Movies.DbTool -- migrate` before importing.
 
-Re-running fetch + import refreshes with newly-seen movies only; movies already
-present (same `tmdb_id`) are skipped. The `ratings` table is never modified.
+Re-running fetch + import inserts newly seen movies and **refreshes** existing ones in place, matched
+by `tmdb_id`, so ids and ratings are kept. The `ratings` table is never modified.
+
+## 4. Keep every movie's details complete
+
+A fetch only enriches the movies it lists, and discover's result set changes daily. So movies
+imported earlier, for example by the list-only fetch that ran before details existed, can be left
+without details. `enrich-movies.sh` fixes that by working from the TMDB ids already in the db:
+
+    scripts/enrich-movies.sh          # only TMDB movies still missing details
+    scripts/enrich-movies.sh --all    # refresh details for every TMDB movie
+
+It reads the ids from the db, fetches them (`fetch-tmdb.sh --ids-file`, with progress), then loads the
+result (`load-movies.sh`). If nothing is missing it prints "All TMDB movies already have details" and
+exits. A full local run (9,781 movies) took about 3 minutes.
+
+TMDB itself doesn't have every field for every film. After a full enrichment locally: posters
+10,006 / 10,009, runtime 9,986, director 9,982, trailers 8,472, taglines 5,812. An empty tagline or
+trailer usually means TMDB has none.
+
+## 5. Progress and status output
+
+| Command                      | Shows                                                                                                  |
+|------------------------------|--------------------------------------------------------------------------------------------------------|
+| `fetch-tmdb.sh` (enrichment) | `done/total (%) · failed · elapsed · ETA`, then `Enriched n/m` and any skipped ids                     |
+| `load-movies.sh`             | the steps above, the import summary, and `TMDB movies with details: x / y`                             |
+| `Movies.DbTool import`       | the staged count with ETA, the transform step and summary, and the same coverage line                  |
+| `stack-up.sh` | Movies; Details with %, posters, trailers and taglines; Credits by type; last import time; the scripts in order (fetch, then load, or the `enrich-movies.sh` shortcut); a next step only when one is needed; it also lists `reset-data.sh` |
+
+In a terminal, the progress line redraws in place every second. In CI logs such as `import.yml`, it
+prints a new line every 30s (scripts) or every 10% (DbTool).
+
+`stack-up.sh` example:
+
+    Movies data:
+      Movies    10034   10009 from TMDB · 25 manual
+      Details   10009   of 10009 TMDB movies (100%) · posters 10006 · trailers 8472 · taglines 5812
+      Credits   122694  11146 directors · 19241 writers · 92307 cast
+      Imported  2026-09-22 13:29 UTC
+
+      Scripts (in order, all safe to re-run):
+        1. scripts/fetch-tmdb.sh [options]     fetch movies + details from TMDB -> Data/tmdb-movies.ndjson
+        2. scripts/load-movies.sh [file]       load that file (or another NDJSON file) into the db
+        Or, for movies already in the db (fetches, then loads):
+           scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)
+        Start over (deletes every movie and rating, asks first):
+           scripts/reset-data.sh [--volume] [--reload]   wipe the data (--volume: the db volume too;
+                                                         --reload: then fetch + load fresh TMDB data)
 
 ## Behaviour notes
+
+**Enriched data is never downgraded.** A line fetched from the details endpoint (its `raw` has
+`credits`) always refreshes `movie_details`, `movie_credits`, `imdb_id` and `raw`. A list-only line,
+for example from an older NDJSON file, only seeds `movie_details` (overview and poster) for a movie
+that has none yet. It never blanks an existing tagline, trailer, credits, `imdb_id` or an enriched `raw`.
+Bad field values (a non-numeric runtime, an unsupported trailer site, a credit with no id) are stored
+as `null` or skipped, never failing the import transaction.
+
+**GitHub Actions:** `import.yml` is triggered manually. Its default `fetch_args` is empty, which
+runs the full discover fetch (about 10k movies, enriched). Pass e.g. `--list popular --pages 5`
+for a quick run.
+
+**API image URLs** are built from `Tmdb:Images` in `appsettings.json`:
+`BaseUrl` `https://image.tmdb.org/t/p/`, `PosterSize` `w500`, `BackdropSize` `w1280` and
+`ProfileSize` `w185`. The same values are the code defaults.
 
 Within a single import batch, if the same TMDB id appears more than once (which
 happens when TMDB paged lists return the same movie on two pages), only the first
@@ -135,3 +248,27 @@ that collides with another movie in the same batch, is **skipped** rather than
 imported. Slugs are never disambiguated with a suffix because `movies.slug` must
 remain byte-identical to the slug generated by the API's `Movie.GenerateSlug`
 method; adding a suffix would break by-slug lookups in the API.
+
+## 6. Start fresh (wipe everything)
+
+`scripts/reset-data.sh` clears the local data for a clean start: every movie (TMDB **and** manually
+created), its genres, details, credits and metadata, and **all ratings**. It prints what will go,
+asks you to type `wipe`, and has no undo. The schema stays with the migrations.
+
+    scripts/reset-data.sh                    # empty the data tables (container and schema kept)
+    scripts/reset-data.sh --volume           # also delete the Postgres volume, then restart the stack
+    scripts/reset-data.sh --reload           # after wiping: fetch fresh TMDB data and load it
+    scripts/reset-data.sh --volume --reload  # the full clean start
+    scripts/reset-data.sh --yes ...          # skip the prompt (scripting)
+
+`--volume` is the only option that also clears anything left by migrations or added by hand outside
+the data tables. Without it, one `truncate movies cascade` empties every dependent table, which is
+what the test fixture does between tests.
+
+**One stack script at a time.** `stack-up.sh` and `reset-data.sh` take a lock, so starting the stack
+(Rider's Docker Stack config, or `stack-up.sh`) while a reset is recreating it stops with a message
+instead of Docker's "container name is already in use". A lock left by a dead process is cleared
+automatically.
+
+Check afterwards with `scripts/stack-up.sh`: **manual** should be 0, and `Imported` should show today.
+Your `.env` and its TMDB key are never touched.

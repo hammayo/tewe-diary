@@ -40,7 +40,16 @@ is kept comment-free):
 
 **Full stack (Movies API + Identity + Postgres):**
 - Rider: run the `Full Stack` or `Docker Stack` configuration under `.run/`.
-- Shell: `bash scripts/stack-up.sh` — builds, starts detached, then prints URLs.
+- Shell: `bash scripts/stack-up.sh` builds and starts the stack detached, then prints the URLs and a
+  **Movies data** summary:
+  - movie counts (TMDB and manual)
+  - TMDB details coverage, with how many movies have posters, trailers and taglines
+  - credits by type (directors, writers, cast)
+  - when TMDB data was last imported
+  - the data scripts in the order you use them: `fetch-tmdb.sh`, then `load-movies.sh`, or the
+    `enrich-movies.sh` shortcut for movies already in the db
+  - a next step, only when one is needed, plus `reset-data.sh` for a clean start
+  See the [TMDB import runbook](tmdb-import.md#5-progress-and-status-output).
 
 ## URLs & ports
 

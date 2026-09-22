@@ -25,6 +25,7 @@ public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
                 new OpenApiInfo
                 {
                     Title = _environment.ApplicationName,
+                    Description = "This product uses the TMDB API but is not endorsed or certified by TMDB.",
                     Version = description.ApiVersion.ToString(),
                 });
         }

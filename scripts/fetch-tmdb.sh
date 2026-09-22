@@ -8,6 +8,7 @@
 #                       --sort primary_release_date.desc --pages 500 (min-rating 6.5, min-votes 50).
 #   List:               --list popular|top_rated|now_playing                     -> /movie/{list}
 #   Trending:           --trending [day|week]  (top 10)                          -> /trending/movie/{window}
+#   Ids:                --ids-file PATH  (skips the list fetch; enriches exactly these ids)
 #
 # Every mode is followed by an enrichment pass: one /movie/{id}?append_to_response=credits,videos
 # call per movie (overview, tagline, runtime, imdb_id, top-10 cast, director/writers, one trailer).
@@ -19,10 +20,14 @@
 #                         [--sort primary_release_date.desc] [--min-rating 6.5] \
 #                         [--min-votes 50] [--pages N] [--out PATH]
 #   scripts/fetch-tmdb.sh --trending [day|week] [--out PATH]
+#   scripts/fetch-tmdb.sh --ids-file PATH [--out PATH]   # details only, for the TMDB ids listed one per line
+#                                                        # (used by scripts/enrich-movies.sh)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=helpers/progress.sh
+. "$SCRIPT_DIR/helpers/progress.sh"
 
 LIST=""
 PAGES=500  # TMDB caps discover/list at page 500; requesting more returns HTTP 400
@@ -34,6 +39,7 @@ SORT=""
 MIN_RATING=""
 MIN_VOTES=""
 TRENDING=""
+IDS_FILE=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -46,6 +52,7 @@ while [ $# -gt 0 ]; do
     --sort)              SORT="$2"; shift 2 ;;
     --min-rating)        MIN_RATING="$2"; shift 2 ;;
     --min-votes)         MIN_VOTES="$2"; shift 2 ;;
+    --ids-file)          IDS_FILE="$2"; shift 2 ;;
     --trending)
       if [ "${2:-}" = "day" ] || [ "${2:-}" = "week" ]; then
         TRENDING="$2"; shift 2
@@ -70,8 +77,18 @@ if [ -n "$YEAR" ] || [ -n "$GENRE" ] || [ -n "$ORIG_LANG" ] \
   discover_requested=true
 fi
 
-# Enforce mutual exclusivity between the three modes.
-if [ -n "$TRENDING" ]; then
+# Enforce mutual exclusivity between the modes.
+if [ -n "$IDS_FILE" ]; then
+  if [ -n "$TRENDING" ] || [ -n "$LIST" ] || [ "$discover_requested" = true ]; then
+    echo "Error: --ids-file cannot be combined with --trending, --list or discover filters." >&2
+    exit 2
+  fi
+  if [ ! -f "$IDS_FILE" ]; then
+    echo "Error: --ids-file $IDS_FILE not found." >&2
+    exit 2
+  fi
+  MODE="ids"
+elif [ -n "$TRENDING" ]; then
   if [ -n "$LIST" ] || [ "$discover_requested" = true ]; then
     echo "Error: --trending cannot be combined with --list or discover filters (--year/--genre/...)." >&2
     exit 2
@@ -150,6 +167,27 @@ fi
 # Transform a TMDB list response (stdin) into NDJSON on stdout.
 emit() { jq -c --argjson genres "$GENRE_MAP" -f "$SCRIPT_DIR/helpers/tmdb-to-ndjson.jq"; }
 
+# One progress line for enrich(): done/total, %, failures, elapsed and a rough ETA. "Done" counts
+# saved responses plus failed ids (a file in mid-download is counted early; at most 8 are in flight).
+# Usage: enrich_progress <work-dir> <total> <start-seconds> <line-end: '\r' | '\n'>
+enrich_progress() {
+  local work="$1" total="$2" start="$3" end="$4" saved failed completed pct elapsed eta
+  saved="$(find "$work" -name '*.json' | wc -l | tr -d ' ')"
+  failed=0
+  [ -f "$work/failed.txt" ] && failed="$(wc -l < "$work/failed.txt" | tr -d ' ')"
+  completed=$((saved + failed))
+  pct=$(( total > 0 ? completed * 100 / total : 100 ))
+  elapsed=$((SECONDS - start))
+  eta="--"
+  if [ "$completed" -gt 0 ] && [ "$completed" -lt "$total" ]; then
+    eta="$(fmt_duration $(( elapsed * (total - completed) / completed )))"
+  elif [ "$completed" -ge "$total" ]; then
+    eta="0s"
+  fi
+  printf "  %d/%d (%d%%) · %d failed · %s elapsed · ETA %s   ${end}" \
+    "$completed" "$total" "$pct" "$failed" "$(fmt_duration "$elapsed")" "$eta" >&2
+}
+
 # Enrich every fetched movie with its details, credits and trailer (one /movie/{id} call each,
 # 8 in parallel to stay under TMDB's rate limit), then rewrite $OUT in the details shape.
 # Failed ids are skipped and reported, never fatal (PRD FR-10, D15).
@@ -159,8 +197,12 @@ enrich() {
   jq -r '.tmdb_id' "$OUT" | awk '!seen[$0]++' > "$work/ids.txt"
   total="$(wc -l < "$work/ids.txt" | tr -d ' ')"
   echo "Enriching $total movies (details, credits, trailer)..." >&2
+
+  # Fetch in the background and report progress while it runs (see watch_pid in helpers/progress.sh).
   TMDB_API="$API" TMDB_AUTH_HEADER="$AUTH_HEADER" TMDB_KEY_QS="$KEY_QS" \
-    xargs -P 8 -n 1 "$SCRIPT_DIR/helpers/fetch-tmdb-detail.sh" "$work" < "$work/ids.txt"
+    xargs -P 8 -n 1 "$SCRIPT_DIR/helpers/fetch-tmdb-detail.sh" "$work" < "$work/ids.txt" &
+  watch_pid $! enrich_progress "$work" "$total" "$SECONDS"
+
   find "$work" -name '*.json' -print0 \
     | xargs -0 -r jq -c -f "$SCRIPT_DIR/helpers/tmdb-details-to-ndjson.jq" > "$OUT"
   ok="$(wc -l < "$OUT" | tr -d ' ')"
@@ -199,6 +241,11 @@ case "$MODE" in
     done
     printf '\n' >&2
     echo "Wrote $(wc -l < "$OUT") movies to $OUT (discover: year=${YEAR:-any}, genre=${GENRE:-any}, lang=${ORIG_LANG:-any}, sort=$SORT, min-rating=$MIN_RATING, min-votes=$MIN_VOTES, pages=$PAGES)"
+    ;;
+  ids)
+    # No list call: turn the ids into minimal NDJSON rows; enrich() below fetches their details.
+    grep -E '^[0-9]+$' "$IDS_FILE" | awk '{ print "{\"tmdb_id\":" $1 "}" }' > "$OUT"
+    echo "Read $(wc -l < "$OUT" | tr -d ' ') TMDB ids from $IDS_FILE"
     ;;
   trending)
     # /trending returns results already sorted by trend; take the top 10.

@@ -15,6 +15,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=helpers/db.sh
+. "$SCRIPT_DIR/helpers/db.sh"
+# shellcheck source=helpers/lock.sh
+. "$SCRIPT_DIR/helpers/lock.sh"
+
+# One `docker compose up` at a time: a second one (e.g. this script while reset-data.sh --volume is
+# recreating the stack) fails with "container name is already in use".
+stack_lock
 
 CERT_DIR="$REPO_ROOT/.certs"
 CERT_FILE="$CERT_DIR/aspnet-dev.pfx"
@@ -38,30 +46,45 @@ printf '\nSwagger UIs:\n'
 printf '  Movies.Api:    http://localhost:5001/swagger  |  https://localhost:7001/swagger\n'
 printf '  Identity.Api:  http://localhost:5003/swagger  |  https://localhost:7003/swagger\n'
 
-# Movies data: current row count (same query as MovieRepository.GetCountAsync) plus
-# pointers to the fetch + load scripts. Retry briefly in case migrations are still running on boot.
+# Movies data: counts with a breakdown, when TMDB data was last imported, the scripts in the order
+# they're used (fetch -> load, or the enrich shortcut), and a next step only when one is needed.
+# Retry briefly while migrations run on boot (the query fails until they have).
 printf '\nMovies data:\n'
-movie_count=""
+counts=""
 for _ in $(seq 1 10); do
-  movie_count="$(docker compose -f "$REPO_ROOT/docker-compose.yml" exec -T db \
-    sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(id) from movies"' 2>/dev/null | tr -d '[:space:]')"
-  [[ "$movie_count" =~ ^[0-9]+$ ]] && break
+  counts="$(db_counts 2>/dev/null)" || counts=""
+  [[ "$counts" =~ ^[0-9]+( [0-9]+){9} ]] && break
   sleep 1
 done
-if [[ "$movie_count" =~ ^[0-9]+$ ]]; then
-  printf '  Rows in movies table: %s\n' "$movie_count"
-  if [[ "$movie_count" -eq 0 ]]; then
-    printf '  -> Table is empty. Populate it:\n'
-    printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
-    printf '     2) Load into db:     scripts/load-movies.sh\n'
-  else
-    printf '  (Re)populate sample data:\n'
-    printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
-    printf '     2) Load into db:     scripts/load-movies.sh\n'
-  fi
+
+# pct <part> <whole> -> "n%" (0% when whole is 0)
+pct() { if [ "$2" -gt 0 ]; then printf '%d%%' $(($1 * 100 / $2)); else printf '0%%'; fi; }
+
+movies=""
+if [[ "$counts" =~ ^[0-9]+( [0-9]+){9} ]]; then
+  read -r movies tmdb enriched credits posters trailers taglines directors writers cast last_import <<<"$counts"
+  printf '  Movies    %-7s %s from TMDB · %s manual\n' "$movies" "$tmdb" "$((movies - tmdb))"
+  printf '  Details   %-7s of %s TMDB movies (%s) · posters %s · trailers %s · taglines %s\n' \
+    "$enriched" "$tmdb" "$(pct "$enriched" "$tmdb")" "$posters" "$trailers" "$taglines"
+  printf '  Credits   %-7s %s directors · %s writers · %s cast\n' "$credits" "$directors" "$writers" "$cast"
+  printf '  Imported  %s\n' "${last_import:-never}"
 else
-  printf '  Rows in movies table: unavailable (db starting or migrations pending)\n'
-  printf '  Populate sample data:\n'
-  printf '     1) Fetch from TMDB:  scripts/fetch-tmdb.sh\n'
-  printf '     2) Load into db:     scripts/load-movies.sh\n'
+  printf '  Counts unavailable (db starting or migrations pending).\n'
+fi
+
+printf '\n  Scripts (in order, all safe to re-run):\n'
+printf '    1. scripts/fetch-tmdb.sh [options]     fetch movies + details from TMDB -> Data/tmdb-movies.ndjson\n'
+printf '    2. scripts/load-movies.sh [file]       load that file (or another NDJSON file) into the db\n'
+printf '    Or, for movies already in the db (fetches, then loads):\n'
+printf '       scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)\n'
+printf '    Start over (deletes every movie and rating, asks first):\n'
+printf '       scripts/reset-data.sh [--volume] [--reload]   wipe the data (--volume: the db volume too;\n'
+printf '                                                     --reload: then fetch + load fresh TMDB data)\n'
+
+if [[ -n "$movies" ]]; then
+  if [[ "$movies" -eq 0 ]]; then
+    printf '\n  -> Empty. Run 1 then 2.\n'
+  elif [[ "$enriched" -lt "$tmdb" ]]; then
+    printf '\n  -> %s TMDB movies are missing details. Run: scripts/enrich-movies.sh\n' "$((tmdb - enriched))"
+  fi
 fi

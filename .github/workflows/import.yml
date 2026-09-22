@@ -1,6 +1,7 @@
 name: Import TMDB
 
-# Ad-hoc (manually triggered) data refresh: fetch from TMDB → upsert import as the
+# Ad-hoc (manually triggered) data refresh: fetch from TMDB (list/discover, then one details call per
+# movie for overview, tagline, credits and trailer) → upsert import as the
 # least-privilege movies_importer role → evict the API's "movies" output cache. Safe to re-run;
 # the import is idempotent and never touches ratings or manual movies.
 #
@@ -13,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       fetch_args:
-        description: 'Arguments passed to scripts/fetch-tmdb.sh'
+        description: 'Arguments passed to scripts/fetch-tmdb.sh (empty = full discover run, ~10k movies, enriched)'
         required: false
-        default: '--list popular --pages 5'
+        default: ''
 
 permissions:
   id-token: write

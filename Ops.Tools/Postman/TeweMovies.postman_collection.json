@@ -79,7 +79,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{apiHost}}/api/v1/movies/",
+							"raw": "{{apiHost}}/api/v1/movies/{{tmdbSlug}}",
 							"host": [
 								"{{apiHost}}"
 							],
@@ -87,11 +87,74 @@
 								"api",
 								"v1",
 								"movies",
-								""
+								"{{tmdbSlug}}"
 							]
-						}
+						},
+						"description": "Get one movie by GUID or slug. TMDB movies include `posterUrl` and a `details` object: tmdbId, imdbId, overview, tagline, runtimeMinutes, backdropUrl, trailer {site, key, name, url, embedUrl}, directors, writers (role = job) and top-10 cast (role = character). Manual movies return `posterUrl: null` and `details: null`. Defaults to {{tmdbSlug}}; use a created movie's id to see the manual case."
 					},
-					"response": []
+					"response": [
+						{
+							"name": "The Odyssey (TMDB movie with details)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{apiHost}}/api/v1/movies/the-odyssey-2026",
+									"host": [
+										"{{apiHost}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"movies",
+										"the-odyssey-2026"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"body": "{\n  \"id\": \"7e3939ee-a553-4bfe-92ee-1a017be353c7\",\n  \"title\": \"The Odyssey\",\n  \"slug\": \"the-odyssey-2026\",\n  \"rating\": null,\n  \"userRating\": null,\n  \"yearOfRelease\": 2026,\n  \"genres\": [\n    \"Adventure\",\n    \"Action\",\n    \"Fantasy\"\n  ],\n  \"posterUrl\": \"https://image.tmdb.org/t/p/w500/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg\",\n  \"details\": {\n    \"tmdbId\": 1368337,\n    \"imdbId\": \"tt33764258\",\n    \"overview\": \"Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.\",\n    \"tagline\": \"Defy the gods.\",\n    \"runtimeMinutes\": 173,\n    \"backdropUrl\": \"https://image.tmdb.org/t/p/w1280/RMXG8myu1aGlNUsRjtxzmpdMK0.jpg\",\n    \"trailer\": {\n      \"site\": \"YouTube\",\n      \"key\": \"Mzw2ttJD2qQ\",\n      \"name\": \"Official Trailer\",\n      \"url\": \"https://www.youtube.com/watch?v=Mzw2ttJD2qQ\",\n      \"embedUrl\": \"https://www.youtube.com/embed/Mzw2ttJD2qQ\"\n    },\n    \"directors\": [\n      {\n        \"tmdbPersonId\": 525,\n        \"name\": \"Christopher Nolan\",\n        \"role\": null,\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/xuAIuYSmsUzKlUMBFGVZaWsY3DZ.jpg\"\n      }\n    ],\n    \"writers\": [\n      {\n        \"tmdbPersonId\": 525,\n        \"name\": \"Christopher Nolan\",\n        \"role\": \"Writer\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/xuAIuYSmsUzKlUMBFGVZaWsY3DZ.jpg\"\n      }\n    ],\n    \"cast\": [\n      {\n        \"tmdbPersonId\": 1892,\n        \"name\": \"Matt Damon\",\n        \"role\": \"Odysseus\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/aCvBXTAR9B1qRjIRzMBYhhbm1fR.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 1136406,\n        \"name\": \"Tom Holland\",\n        \"role\": \"Telemachus\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/5OK84Wn1bIEIThFKcVoaN087mLj.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 1813,\n        \"name\": \"Anne Hathaway\",\n        \"role\": \"Penelope\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/nbccV2pMoyLTCeg5DQip24Eq0Jp.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 11288,\n        \"name\": \"Robert Pattinson\",\n        \"role\": \"Antinous\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/3qZ09UE7lN6AtorfXFRYpEtSY93.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 1227717,\n        \"name\": \"Himesh Patel\",\n        \"role\": \"Eurylochus\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/icqsXLmU0FxBGTv63kkA0GcrecO.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 6885,\n        \"name\": \"Charlize Theron\",\n        \"role\": \"Calypso\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/gd7ShD0yt4bsR2STeQ19KQ6hvXL.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 5723,\n        \"name\": \"John Leguizamo\",\n        \"role\": \"Eumaeus\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/kwYCdxTlDh9zauUCg4mp2XTCQTw.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 1978406,\n        \"name\": \"Travis Scott\",\n        \"role\": \"Bard\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/eBdm7HQS6lLGg4BocgfoJ5qB9yp.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 1154054,\n        \"name\": \"Corey Hawkins\",\n        \"role\": \"Polybus\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/wRt0Bc0chN5BSjvYzmg2evgqNzp.jpg\"\n      },\n      {\n        \"tmdbPersonId\": 84706,\n        \"name\": \"Jarreth J. Merz\",\n        \"role\": \"Leodes\",\n        \"profileUrl\": \"https://image.tmdb.org/t/p/w185/ze8WDEujZmTXdCLcUy0IaymwlcS.jpg\"\n      }\n    ]\n  }\n}"
+						}
+					],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"const movie = pm.response.json();",
+									"",
+									"pm.test(\"has a TMDB poster URL\", () => {",
+									"    pm.expect(movie.posterUrl).to.match(/^https:\\/\\/image\\.tmdb\\.org\\/t\\/p\\//);",
+									"});",
+									"",
+									"pm.test(\"has TMDB details (null for manual movies)\", () => {",
+									"    pm.expect(movie.details).to.be.an(\"object\");",
+									"    pm.expect(movie.details).to.have.all.keys(\"tmdbId\", \"imdbId\", \"overview\", \"tagline\", \"runtimeMinutes\",",
+									"        \"backdropUrl\", \"trailer\", \"directors\", \"writers\", \"cast\");",
+									"    pm.expect(movie.details.tmdbId).to.be.a(\"number\");",
+									"    pm.expect(movie.details.cast.length).to.be.at.most(10);",
+									"});",
+									"",
+									"pm.test(\"trailer, when present, has watch and embed URLs\", () => {",
+									"    const trailer = movie.details.trailer;",
+									"    if (trailer) {",
+									"        pm.expect(trailer.site).to.be.oneOf([\"YouTube\", \"Vimeo\"]);",
+									"        pm.expect(trailer.embedUrl).to.match(/youtube\\.com\\/embed\\/|player\\.vimeo\\.com\\/video\\//);",
+									"    }",
+									"});"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Get all movies",
@@ -108,9 +171,71 @@
 								"v1",
 								"movies"
 							]
-						}
+						},
+						"description": "Paged list. Each item has `posterUrl`, but `details` is always null in the list, by design (no extra query per movie). Use Get movie for details."
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Filtered list (posterUrl, details: null)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{apiHost}}/api/v1/movies?title=Odyssey&year=2026&pageSize=2",
+									"host": [
+										"{{apiHost}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"movies"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "Odyssey"
+										},
+										{
+											"key": "year",
+											"value": "2026"
+										},
+										{
+											"key": "pageSize",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"body": "{\n  \"items\": [\n    {\n      \"id\": \"7e3939ee-a553-4bfe-92ee-1a017be353c7\",\n      \"title\": \"The Odyssey\",\n      \"slug\": \"the-odyssey-2026\",\n      \"rating\": null,\n      \"userRating\": null,\n      \"yearOfRelease\": 2026,\n      \"genres\": [\n        \"Action\",\n        \"Adventure\",\n        \"Fantasy\"\n      ],\n      \"posterUrl\": \"https://image.tmdb.org/t/p/w500/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg\",\n      \"details\": null\n    }\n  ],\n  \"pageSize\": 2,\n  \"page\": 1,\n  \"total\": 1,\n  \"hasNextPage\": false\n}"
+						}
+					],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"",
+									"pm.test(\"items carry posterUrl but never details\", () => {",
+									"    pm.response.json().items.forEach(movie => {",
+									"        pm.expect(movie).to.have.property(\"posterUrl\");",
+									"        pm.expect(movie.details).to.be.null;",
+									"    });",
+									"});"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Update movie",
@@ -314,6 +439,10 @@
 		{
 			"key": "apiKey",
 			"value": "dev-api-key"
+		},
+		{
+			"key": "tmdbSlug",
+			"value": "the-odyssey-2026"
 		}
 	]
 }
