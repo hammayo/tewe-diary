@@ -1,4 +1,6 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Movies.Application.Database.Import;
 using Movies.Contracts.Requests;
 using Movies.Contracts.Responses;
 using Movies.Tests.Shared;
@@ -299,6 +301,81 @@ public class MoviesEndpointsTests
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
     
+    [Fact]
+    public async Task get_of_a_tmdb_movie_returns_poster_url_and_details()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        await _fx.Factory.Services.GetRequiredService<MovieImporter>()
+            .ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var response = await client.GetAsync($"{MoviesUrl}/{TmdbFixtures.OdysseySlug}");
+        var movie = await response.ReadJsonAsync<MovieResponse>();
+        var details = movie!.Details!;
+        var directorNames = details.Directors.Select(d => d.Name).ToArray();
+        var writerRoles = details.Writers.Select(w => w.Role).ToArray();
+        var cast = details.Cast.Select(c => (c.Name, c.Role, c.ProfileUrl)).ToArray();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("https://image.tmdb.org/t/p/w500/poster.jpg", movie.PosterUrl);
+        Assert.Equal(1368337, details.TmdbId);
+        Assert.Equal("tt33764258", details.ImdbId);
+        Assert.Equal("Odysseus sails home.", details.Overview);
+        Assert.Equal("Defy the gods.", details.Tagline);
+        Assert.Equal(173, details.RuntimeMinutes);
+        Assert.Equal("https://image.tmdb.org/t/p/w1280/backdrop.jpg", details.BackdropUrl);
+        Assert.Equal("https://www.youtube.com/watch?v=Mzw2ttJD2qQ", details.Trailer!.Url);
+        Assert.Equal("https://www.youtube.com/embed/Mzw2ttJD2qQ", details.Trailer.EmbedUrl);
+        Assert.Equal(new[] { "Christopher Nolan" }, directorNames);
+        Assert.Equal(new[] { "Writer" }, writerRoles);
+        Assert.Equal(new[]
+        {
+            ("Matt Damon", (string?)"Odysseus", (string?)"https://image.tmdb.org/t/p/w185/damon.jpg"),
+            ("Tom Holland", (string?)"Telemachus", (string?)null)
+        }, cast);
+    }
+
+    [Fact]
+    public async Task get_of_a_manual_movie_returns_no_poster_and_no_details()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var created = await CreateMovieAsync();
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var response = await client.GetAsync($"{MoviesUrl}/{created.Id}");
+        var movie = await response.ReadJsonAsync<MovieResponse>();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(movie!.PosterUrl);
+        Assert.Null(movie.Details);
+    }
+
+    [Fact]
+    public async Task get_all_returns_poster_urls_without_details()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        await _fx.Factory.Services.GetRequiredService<MovieImporter>()
+            .ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var response = await client.GetAsync(MoviesUrl);
+        var movies = await response.ReadJsonAsync<MoviesResponse>();
+        var item = movies!.Items.Single();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("https://image.tmdb.org/t/p/w500/poster.jpg", item.PosterUrl);
+        Assert.Null(item.Details);
+    }
+
     private static CreateMovieRequest YearOf(int year)
     {
         var request = TestData.CreateMovieRequest.Generate();

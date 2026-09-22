@@ -15,4 +15,10 @@ public class MovieResponse
     public required int YearOfRelease { get; init; }
 
     public required IEnumerable<string> Genres { get; init; } = Enumerable.Empty<string>();
+
+    // TMDB poster; null for manual movies and in POST/PUT responses.
+    public string? PosterUrl { get; init; }
+
+    // TMDB details; only on GET /movies/{idOrSlug} for TMDB movies.
+    public MovieDetailsResponse? Details { get; init; }
 }

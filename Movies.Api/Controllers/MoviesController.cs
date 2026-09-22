@@ -16,11 +16,13 @@ public class MoviesController : ControllerBase
 {
     private readonly IMovieService _movieService;
     private readonly IOutputCacheStore _outputCacheStore;
+    private readonly TmdbUrlBuilder _urls;
 
-    public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore)
+    public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore, TmdbUrlBuilder urls)
     {
         _movieService = movieService;
         _outputCacheStore = outputCacheStore;
+        _urls = urls;
     }
     
     [Authorize(AuthConstants.TrustedMemberPolicyName)]
@@ -33,7 +35,7 @@ public class MoviesController : ControllerBase
         var movie = request.MapToMovie();
         await _movieService.CreateAsync(movie, token);
         await _outputCacheStore.EvictByTagAsync("movies", token);
-        var movieResponse = movie.MapToResponse();
+        var movieResponse = movie.MapToResponse(_urls);
         return CreatedAtAction(nameof(GetV1), new { idOrSlug = movie.Id }, movieResponse);
     }
     
@@ -54,7 +56,7 @@ public class MoviesController : ControllerBase
             return NotFound();
         }
 
-        var response = movie.MapToResponse();
+        var response = movie.MapToResponse(_urls);
         return Ok(response);
     }
     
@@ -69,7 +71,7 @@ public class MoviesController : ControllerBase
             .WithUser(userId);
         var movies = await _movieService.GetAllAsync(options, token);
         var movieCount = await _movieService.GetCountAsync(options.Title, options.YearOfRelease, token);
-        var moviesResponse = movies.MapToResponse(options.Page, options.PageSize, movieCount);
+        var moviesResponse = movies.MapToResponse(_urls, options.Page, options.PageSize, movieCount);
         return Ok(moviesResponse);
     }
     
@@ -91,7 +93,7 @@ public class MoviesController : ControllerBase
         }
 
         await _outputCacheStore.EvictByTagAsync("movies", token);
-        var response = updatedMovie.MapToResponse();
+        var response = updatedMovie.MapToResponse(_urls);
         return Ok(response);
     }
 

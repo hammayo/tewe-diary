@@ -28,7 +28,7 @@ public static class ContractMapping
         };
     }
 
-    public static MovieResponse MapToResponse(this Movie movie)
+    public static MovieResponse MapToResponse(this Movie movie, TmdbUrlBuilder urls)
     {
         return new MovieResponse
         {
@@ -38,19 +38,69 @@ public static class ContractMapping
             Rating = movie.Rating,
             UserRating = movie.UserRating,
             YearOfRelease = movie.YearOfRelease,
-            Genres = movie.Genres
+            Genres = movie.Genres,
+            PosterUrl = urls.Poster(movie.PosterPath),
+            Details = movie.Details?.MapToResponse(urls)
         };
     }
 
-    public static MoviesResponse MapToResponse(this IEnumerable<Movie> movies,
+    public static MoviesResponse MapToResponse(this IEnumerable<Movie> movies, TmdbUrlBuilder urls,
         int page, int pageSize, int totalCount)
     {
         return new MoviesResponse
         {
-            Items = movies.Select(MapToResponse),
+            Items = movies.Select(movie => movie.MapToResponse(urls)),
             Page = page,
             PageSize = pageSize,
             Total = totalCount
+        };
+    }
+
+    private static MovieDetailsResponse MapToResponse(this MovieDetails details, TmdbUrlBuilder urls)
+    {
+        return new MovieDetailsResponse
+        {
+            TmdbId = details.TmdbId,
+            ImdbId = details.ImdbId,
+            Overview = details.Overview,
+            Tagline = details.Tagline,
+            RuntimeMinutes = details.RuntimeMinutes,
+            BackdropUrl = urls.Backdrop(details.BackdropPath),
+            Trailer = details.Trailer?.MapToResponse(urls),
+            Directors = details.Directors.Select(credit => credit.MapToResponse(urls)).ToList(),
+            Writers = details.Writers.Select(credit => credit.MapToResponse(urls)).ToList(),
+            Cast = details.Cast.Select(credit => credit.MapToResponse(urls)).ToList()
+        };
+    }
+
+    // Null when the site has no known URL format, so clients never receive a broken player link.
+    private static TrailerResponse? MapToResponse(this MovieTrailer trailer, TmdbUrlBuilder urls)
+    {
+        var url = urls.TrailerUrl(trailer.Site, trailer.Key);
+        var embedUrl = urls.TrailerEmbedUrl(trailer.Site, trailer.Key);
+        if (url is null || embedUrl is null)
+        {
+            return null;
+        }
+
+        return new TrailerResponse
+        {
+            Site = trailer.Site,
+            Key = trailer.Key,
+            Name = trailer.Name,
+            Url = url,
+            EmbedUrl = embedUrl
+        };
+    }
+
+    private static CreditResponse MapToResponse(this MovieCredit credit, TmdbUrlBuilder urls)
+    {
+        return new CreditResponse
+        {
+            TmdbPersonId = credit.TmdbPersonId,
+            Name = credit.Name,
+            Role = credit.Role,
+            ProfileUrl = urls.Profile(credit.ProfilePath)
         };
     }
     
