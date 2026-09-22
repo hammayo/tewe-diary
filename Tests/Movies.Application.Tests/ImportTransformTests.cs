@@ -191,4 +191,110 @@ public class ImportTransformTests
         // Assert
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public async Task import_of_a_details_payload_stores_details_credits_trailer_and_imdb_id()
+    {
+        // Arrange
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // Act
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+
+        // Assert
+        var id = await connection.ExecuteScalarAsync<Guid>("select id from movies where slug = @slug;", new { slug = TmdbFixtures.OdysseySlug });
+        var imdbId = await connection.ExecuteScalarAsync<string>("select imdb_id from movie_metadata where movieid = @id;", new { id });
+        var details = await connection.QuerySingleAsync<(string Tagline, int Runtime, string Poster, string TrailerSite, string TrailerKey)>(
+            "select tagline, runtime_minutes, poster_path, trailer_site, trailer_key from movie_details where movieid = @id;", new { id });
+        var credits = (await connection.QueryAsync<string>(
+            "select credit_type || ':' || name || ':' || coalesce(role, '') from movie_credits where movieid = @id order by credit_type, ordinal;",
+            new { id })).ToArray();
+        Assert.Equal("tt33764258", imdbId);
+        Assert.Equal(("Defy the gods.", 173, "/poster.jpg", "YouTube", "Mzw2ttJD2qQ"), details);
+        Assert.Equal(new[]
+        {
+            "cast:Matt Damon:Odysseus", "cast:Tom Holland:Telemachus",
+            "director:Christopher Nolan:", "writer:Christopher Nolan:Writer"
+        }, credits);
+    }
+
+    [Fact]
+    public async Task reimport_of_a_details_payload_is_idempotent()
+    {
+        // Arrange
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // Act
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+
+        // Assert
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("select count(*) from movie_details;"));
+        Assert.Equal(4, await connection.ExecuteScalarAsync<int>("select count(*) from movie_credits;"));
+    }
+
+    [Fact]
+    public async Task list_only_reimport_keeps_enriched_details_credits_and_imdb_id()
+    {
+        // Arrange
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyDetailsLine });
+
+        // Act
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyListOnlyLine });
+
+        // Assert
+        var tagline = await connection.ExecuteScalarAsync<string>("select tagline from movie_details;");
+        var poster = await connection.ExecuteScalarAsync<string>("select poster_path from movie_details;");
+        var imdbId = await connection.ExecuteScalarAsync<string>("select imdb_id from movie_metadata;");
+        var rawIsEnriched = await connection.ExecuteScalarAsync<bool>("select raw ? 'credits' from movie_metadata;");
+        Assert.Equal("Defy the gods.", tagline);
+        Assert.Equal("/poster.jpg", poster);
+        Assert.Equal("tt33764258", imdbId);
+        Assert.True(rawIsEnriched);
+        Assert.Equal(4, await connection.ExecuteScalarAsync<int>("select count(*) from movie_credits;"));
+    }
+
+    [Fact]
+    public async Task list_only_import_seeds_details_for_a_new_movie()
+    {
+        // Arrange
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // Act
+        await importer.ImportAsync(new[] { TmdbFixtures.OdysseyListOnlyLine });
+
+        // Assert
+        var details = await connection.QuerySingleAsync<(string Overview, string Poster, string? Tagline)>(
+            "select overview, poster_path, tagline from movie_details;");
+        Assert.Equal(("list overview", "/list-poster.jpg", (string?)null), details);
+        Assert.Equal(0, await connection.ExecuteScalarAsync<int>("select count(*) from movie_credits;"));
+    }
+
+    [Theory]
+    // Unsupported trailer site, non-numeric runtime, credit without an id, crew given as an object.
+    [InlineData("""{"tmdb_id":6,"Title":"Bad Fields","YearOfRelease":2002,"Genres":["Drama"],"raw":{"id":6,"imdb_id":"","runtime":"x","credits":{"cast":[{"id":1,"name":"A","character":"","order":0},{"name":"no id"}],"crew":{}},"videos":{"results":[{"site":"Dailymotion","key":"zz"}]}}}""", 1)]
+    // Supported site but blank key; runtime 0; empty credits arrays.
+    [InlineData("""{"tmdb_id":7,"Title":"Blank Key","YearOfRelease":2003,"Genres":["Drama"],"raw":{"id":7,"runtime":0,"credits":{"cast":[],"crew":[]},"videos":{"results":[{"site":"YouTube","key":""}]}}}""", 0)]
+    public async Task malformed_details_fields_are_ignored_without_failing_the_import(string line, int expectedCredits)
+    {
+        // Arrange
+        var (factory, importer) = await FreshDbAsync();
+        using var connection = await factory.CreateConnectionAsync();
+
+        // Act
+        await importer.ImportAsync(new[] { line }); // must not throw
+
+        // Assert
+        var details = await connection.QuerySingleAsync<(int? Runtime, string? TrailerSite, string? TrailerKey)>(
+            "select runtime_minutes, trailer_site, trailer_key from movie_details;");
+        var imdbId = await connection.ExecuteScalarAsync<string?>("select imdb_id from movie_metadata;");
+        Assert.Equal(((int?)null, (string?)null, (string?)null), details);
+        Assert.Null(imdbId);
+        Assert.Equal(expectedCredits, await connection.ExecuteScalarAsync<int>("select count(*) from movie_credits;"));
+    }
 }
