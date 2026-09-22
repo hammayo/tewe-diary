@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Movies.Api.Auth;
 using Movies.Api.Health;
+using Movies.Api.Mapping;
 using Movies.Api.Startup;
 using Movies.Api.Swagger;
 using Movies.Application;
@@ -39,9 +40,18 @@ public static class ApiServiceCollectionExtensions
             .AddApiCaching()
             .AddApiDocumentation()
             .AddApiInfrastructure()
-            .AddApiPersistence(config);
+            .AddApiPersistence(config)
+            .AddTmdb(config);
 
         return builder;
+    }
+
+    private static IServiceCollection AddTmdb(this IServiceCollection services, IConfiguration config)
+    {
+        services.Configure<TmdbImageOptions>(config.GetSection(TmdbImageOptions.SectionName));
+        services.AddSingleton<TmdbUrlBuilder>();
+
+        return services;
     }
 
     private static IServiceCollection AddApiAuthentication(this IServiceCollection services, IConfiguration config)
