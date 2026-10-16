@@ -30,7 +30,7 @@ public class ValidationMappingMiddleware
                 })
             };
 
-            await context.Response.WriteAsJsonAsync(validationFailureResponse);
+            await context.Response.WriteAsJsonAsync(validationFailureResponse, context.RequestAborted);
         }
     }
 }

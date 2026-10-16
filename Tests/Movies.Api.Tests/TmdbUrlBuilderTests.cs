@@ -58,8 +58,8 @@ public class TmdbUrlBuilderTests
         var builder = DefaultBuilder;
 
         // Act
-        var url = builder.TrailerUrl(site, key);
-        var embedUrl = builder.TrailerEmbedUrl(site, key);
+        var url = TmdbUrlBuilder.TrailerUrl(site, key);
+        var embedUrl = TmdbUrlBuilder.TrailerEmbedUrl(site, key);
 
         // Assert
         Assert.Equal(expectedUrl, url);

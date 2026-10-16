@@ -52,7 +52,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("_health");
 
-app.Run();
+await app.RunAsync();
 
 // Exposed so the integration test host (WebApplicationFactory<Program>) can boot the app.
 public partial class Program;

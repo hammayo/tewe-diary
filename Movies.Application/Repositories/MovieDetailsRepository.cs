@@ -72,25 +72,22 @@ public class MovieDetailsRepository : IMovieDetailsRepository
             .Select(c => new MovieCredit(c.TmdbPersonId, c.Name, c.Role, c.ProfilePath))
             .ToList();
 
-    private sealed class DetailsRow
-    {
-        public long TmdbId { get; init; }
-        public string? ImdbId { get; init; }
-        public string? Overview { get; init; }
-        public string? Tagline { get; init; }
-        public int? RuntimeMinutes { get; init; }
-        public string? BackdropPath { get; init; }
-        public string? TrailerSite { get; init; }
-        public string? TrailerKey { get; init; }
-        public string? TrailerName { get; init; }
-    }
+    // Dapper maps these rows through the constructor, so the column names must match the parameter names.
+    private sealed record DetailsRow(
+        long TmdbId,
+        string? ImdbId,
+        string? Overview,
+        string? Tagline,
+        int? RuntimeMinutes,
+        string? BackdropPath,
+        string? TrailerSite,
+        string? TrailerKey,
+        string? TrailerName);
 
-    private sealed class CreditRow
-    {
-        public string CreditType { get; init; } = string.Empty;
-        public long TmdbPersonId { get; init; }
-        public string Name { get; init; } = string.Empty;
-        public string? Role { get; init; }
-        public string? ProfilePath { get; init; }
-    }
+    private sealed record CreditRow(
+        string CreditType,
+        long TmdbPersonId,
+        string Name,
+        string? Role,
+        string? ProfilePath);
 }

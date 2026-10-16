@@ -47,7 +47,7 @@ public class MovieRepository : IMovieRepository
         return result > 0;
     }
 
-    public async Task<Movie?> GetByIdAsync(Guid id, Guid? userId = default, CancellationToken token = default)
+    public async Task<Movie?> GetByIdAsync(Guid id, Guid? userid = default, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var movie = await connection.QuerySingleOrDefaultAsync<Movie>(
@@ -63,7 +63,7 @@ public class MovieRepository : IMovieRepository
             left join movie_details md on m.id = md.movieid
             where id = @id
             group by id, userrating, md.poster_path
-            """, new { id, userId }, cancellationToken: token));
+            """, new { id, userId = userid }, cancellationToken: token));
 
         if (movie is null)
         {
@@ -85,7 +85,7 @@ public class MovieRepository : IMovieRepository
         return movie;
     }
 
-    public async Task<Movie?> GetBySlugAsync(string slug, Guid? userId = default, CancellationToken token = default)
+    public async Task<Movie?> GetBySlugAsync(string slug, Guid? userid = default, CancellationToken token = default)
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         var movie = await connection.QuerySingleOrDefaultAsync<Movie>(
@@ -101,7 +101,7 @@ public class MovieRepository : IMovieRepository
             left join movie_details md on m.id = md.movieid
             where slug = @slug
             group by id, userrating, md.poster_path
-            """, new { slug, userId }, cancellationToken: token));
+            """, new { slug, userId = userid }, cancellationToken: token));
 
         if (movie is null)
         {

@@ -23,6 +23,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Run as the non-root `app` user shipped with the .NET 9 image (port 8080 needs no privileges).
+USER app
+
 COPY --from=build /app ./
 
 # App Service routes to this port; also set WEBSITES_PORT=8080 on the Web App.
