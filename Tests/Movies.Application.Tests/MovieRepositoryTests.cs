@@ -92,6 +92,8 @@ public class MovieRepositoryTests
 
     [Theory]
     [InlineData("Matrix", null, new[] { "Matrix Reloaded", "The Matrix" })]
+    [InlineData("matrix", null, new[] { "Matrix Reloaded", "The Matrix" })]
+    [InlineData("MATRIX", null, new[] { "Matrix Reloaded", "The Matrix" })]
     [InlineData(null, 2020, new[] { "Inception", "Matrix Reloaded" })]
     [InlineData(null, 1999, new[] { "The Matrix" })]
     public async Task get_all_async_filters_by_title_and_year(string? title, int? year, string[] expected)
@@ -110,6 +112,7 @@ public class MovieRepositoryTests
     [Theory]
     [InlineData(null, null, 3)]
     [InlineData("Matrix", null, 2)]
+    [InlineData("matrix", null, 2)]
     [InlineData(null, 2020, 2)]
     [InlineData("Matrix", 2020, 1)]
     public async Task get_count_async_respects_title_and_year_filters(string? title, int? year, int expected)
