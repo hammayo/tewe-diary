@@ -13,7 +13,7 @@ CLI path and shared with the psql ops path (see [design-decisions.md](design-dec
 
 ```
 TMDB API ──fetch-tmdb.sh (list/discover/trending, then enrich: one
-          /movie/{id}?append_to_response=credits,videos per movie)──▶ Data/tmdb-movies.ndjson
+          /movie/{id}?append_to_response=credits,videos per movie)──▶ Data/tmdb-<fetch>.ndjson
                                               │
                     ┌─────────────────────────┴─────────────────────────┐
                     ▼                                                   ▼
@@ -41,20 +41,23 @@ After the chosen mode writes its list, `fetch-tmdb.sh` always enriches every mov
   3. official first
   4. a video named exactly "Official Trailer" first
   5. newest first
+- **Paging stops early:** TMDB keeps serving empty pages past the last result, so the fetch stops as
+  soon as a page comes back empty (`No more results after page N; stopping early.`) instead of running
+  to `--pages`. The classics fetch runs out at ~page 200 of 500.
 - **Failures don't stop the run:** a movie whose details call fails (a 404, or retries used up)
   is skipped. The script ends with `Skipped N movie(s) … <ids>` and still exits 0.
 
 Test the jq step with `bash scripts/tests/test_tmdb_details_transform.sh`.
 
 ```bash
-bash scripts/fetch-tmdb.sh                 # 1. fetch movies + details into Data/tmdb-movies.ndjson (needs a TMDB API key)
-bash scripts/load-movies.sh [file.ndjson]  # 2. load it (default Data/tmdb-movies.ndjson) into the running Docker db via psql,
+bash scripts/fetch-tmdb.sh                 # 1. fetch movies + details into Data/tmdb-<what-was-fetched>.ndjson (needs a TMDB API key)
+bash scripts/load-movies.sh [files...]     # 2. load every Data/*.ndjson (or just the files you name) into the running db,
                                            #    showing step progress, the import summary and details coverage
 bash scripts/enrich-movies.sh [--all]      # shortcut for movies already in the db: fetch details for those missing them,
                                            #    then load (--all: refresh every one)
 bash scripts/reset-data.sh [--volume] [--reload]   # start fresh: delete every movie and rating (asks first)
 # or, via the CLI tool:
-dotnet run --project Ops.Tools/Movies.DbTool -- import Data/tmdb-movies.ndjson
+dotnet run --project Ops.Tools/Movies.DbTool -- import Data/*.ndjson
 # schema migrations (same CLI):
 dotnet run --project Ops.Tools/Movies.DbTool -- migrate
 ```
@@ -71,8 +74,31 @@ the shape and uses the correct auth scheme automatically.
 
 ## 2. Fetch (on demand)
 
+### Presets (the easy way)
+
+A preset is one word, needs no TMDB vocabulary, and names its own output file:
+
+```
+    scripts/fetch-tmdb.sh                     newest releases (the default)      -> tmdb-newest.ndjson
+    scripts/fetch-tmdb.sh newest [pages]      newest releases, N pages of 20     -> tmdb-newest.ndjson
+    scripts/fetch-tmdb.sh classics [minVotes] highest rated, 1000+ votes         -> tmdb-classics.ndjson
+    scripts/fetch-tmdb.sh popular             TMDB's popular list                -> tmdb-popular.ndjson
+    scripts/fetch-tmdb.sh top-rated           TMDB's top-rated list              -> tmdb-top-rated.ndjson
+    scripts/fetch-tmdb.sh now-playing         in cinemas now                     -> tmdb-now-playing.ndjson
+    scripts/fetch-tmdb.sh trending [day|week] trending now (top 10)              -> tmdb-trending-week.ndjson
+    scripts/fetch-tmdb.sh year 1994 [genre]   one year, optionally genres        -> tmdb-year-1994.ndjson
+    scripts/fetch-tmdb.sh genre "Horror,Sci"  one or more genres                 -> tmdb-genre-horror-sci.ndjson
+    scripts/fetch-tmdb.sh language hi         one original language              -> tmdb-language-hi.ndjson
+    scripts/fetch-tmdb.sh ids 680 550         exact TMDB ids (or: ids ids.txt)   -> tmdb-ids-680-550.ndjson
+```
+
+`--help` lists them, `--dry-run` prints what a command would fetch and where without calling TMDB, and
+any flag below still works after a preset (`classics --pages 50 --min-rating 7`).
+
+### Flags (everything a preset can't say)
+
 `fetch-tmdb.sh` has four mutually exclusive modes. They all write NDJSON to
-`Data/tmdb-movies.ndjson` (override with `--out PATH`). A bare run is discover mode, newest first,
+`Data/tmdb-<what-was-fetched>.ndjson` (override with `--out PATH`). A bare run is discover mode, newest first,
 up to 500 pages. List and discover paginate with `--pages N` (20 movies per page); trending is fixed
 at 10. Every mode then enriches each movie with its details (see
 [Enrichment](#enrichment-details-credits-trailer)).
@@ -135,16 +161,51 @@ combined with `--trending`.
 Skips the list call and fetches details for exactly the TMDB ids listed one per line in `ids.txt`.
 It can't be combined with the other modes. `scripts/enrich-movies.sh` uses it (see §4).
 
+### One file per fetch
+
+Each run writes `Data/tmdb-<what-was-fetched>.ndjson`, so a new pull never overwrites an earlier one:
+
+| Command                                               | File                                                                                  |
+|-------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `fetch-tmdb.sh` or `fetch-tmdb.sh newest`             | `tmdb-newest.ndjson`                                                                  |
+| `fetch-tmdb.sh classics`                              | `tmdb-classics.ndjson`                                                                |
+| `fetch-tmdb.sh classics 5000`                         | `tmdb-classics-v5000.ndjson`                                                          |
+| `fetch-tmdb.sh year 1994 Action`                      | `tmdb-year-1994-action.ndjson`                                                        |
+| `fetch-tmdb.sh popular` / `top-rated` / `now-playing` | `tmdb-popular.ndjson` …                                                               |
+| `fetch-tmdb.sh trending week`                         | `tmdb-trending-week.ndjson`                                                           |
+| `fetch-tmdb.sh ids 680 550`                           | `tmdb-ids-680-550.ndjson`                                                             |
+| raw flags, no preset                                  | named after the mode and filters, e.g. `tmdb-discover-vote_average.desc-v1000.ndjson` |
+
+`--out PATH` overrides it. Re-running the same fetch refreshes its own file.
+
+**Why it matters:** TMDB caps discover at 500 pages (10,000 movies), so one fetch can never hold the
+whole catalogue. A bare run gives the newest releases only — it reached back to 2004 in practice, so
+older films (Pulp Fiction, 1994) simply aren't in it. Build the collection you want from several
+fetches and load them together:
+
+    scripts/fetch-tmdb.sh             # newest releases
+    scripts/fetch-tmdb.sh classics    # highest rated (1000+ votes)
+    scripts/fetch-tmdb.sh year 1994   # one year
+    scripts/fetch-tmdb.sh ids 680 550 # exact films
+    scripts/load-movies.sh            # load them all at once
+
 ## 3. Import into the running db container
 
-The simplest way is the loader script. No host `psql` client is needed:
+The simplest way is the loader script, which loads **every** `Data/*.ndjson` unless you name files.
+No host `psql` client is needed:
 
-    scripts/load-movies.sh                     # Data/tmdb-movies.ndjson
-    scripts/load-movies.sh /path/to/file.ndjson
+    scripts/load-movies.sh                      # every Data/*.ndjson
+    scripts/load-movies.sh Data/tmdb-list-popular.ndjson /path/to/other.ndjson
+
+**No duplicates.** All the files are staged together in one transaction: a movie appearing in several
+fetches is imported once (the transform keeps one row per `tmdb_id`), and movies already in the db are
+refreshed in place, keeping their ids and ratings. The loader reports unique movies as well as lines.
 
 It shows its progress, and on failure prints psql's error and exits 1 (nothing is committed):
 
-    [1/3] Copying 9781 movies (9781 with details) + loaders into the db container...
+      tmdb-discover-primary_release_date.desc.ndjson              9800 movies (9800 with details)
+      tmdb-discover-vote_average.desc-v5000.ndjson                  40 movies (40 with details)
+    [1/3] Copying 2 file(s), 9840 lines (9830 unique movies) + loaders into the db container...
     [2/3] Importing in one transaction (stage, upsert movies/genres/metadata, details, credits)...
       running · 9s elapsed
       Import: 0 inserted, 9781 refreshed, 0 skipped (slug collision)
@@ -162,7 +223,7 @@ runner into the container, then run the runner with psql inside it.
     set -a; . ./.env; set +a
 
     CID=$(docker compose ps -q db)
-    docker cp Data/tmdb-movies.ndjson "$CID":/tmp/tmdb-movies.ndjson
+    docker cp Data/<fetch>.ndjson "$CID":/tmp/tmdb-movies.ndjson
     docker cp scripts/helpers/import-transform.sql "$CID":/tmp/import-transform.sql
     docker cp scripts/helpers/import-movies.sql    "$CID":/tmp/import-movies.sql
 
@@ -214,8 +275,8 @@ prints a new line every 30s (scripts) or every 10% (DbTool).
       Imported  2026-09-22 13:29 UTC
 
       Scripts (in order, all safe to re-run):
-        1. scripts/fetch-tmdb.sh [options]     fetch movies + details from TMDB -> Data/tmdb-movies.ndjson
-        2. scripts/load-movies.sh [file]       load that file (or another NDJSON file) into the db
+        1. scripts/fetch-tmdb.sh [options]     fetch movies + details -> Data/tmdb-<what-was-fetched>.ndjson
+        2. scripts/load-movies.sh [files...]   load every Data/*.ndjson (or just the files you name)
         Or, for movies already in the db (fetches, then loads):
            scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)
         Start over (deletes every movie and rating, asks first):

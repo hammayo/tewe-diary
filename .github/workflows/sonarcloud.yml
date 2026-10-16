@@ -1,0 +1,72 @@
+name: SonarCloud
+
+# Builds, runs the whole test suite (Testcontainers needs Docker, which the runner has) and sends the
+# results and coverage to SonarCloud. One-time setup is in _docs/_getting-started.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  SONAR_ORGANIZATION: hammayo
+  SONAR_PROJECT_KEY: hammayo_tewe-diary
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    # Pull requests from forks have no access to SONAR_TOKEN, so they are skipped.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0 # the full history lets SonarCloud blame new code correctly
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: zulu
+          java-version: 21 # the scanner needs it
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Install the scanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Begin analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          dotnet sonarscanner begin
+          /k:"$SONAR_PROJECT_KEY"
+          /o:"$SONAR_ORGANIZATION"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          /d:sonar.coverage.exclusions="Tests/**,Ops.Tools/**"
+
+      - name: Build
+        run: dotnet build TeweRestApi.sln --no-incremental
+
+      - name: Test with coverage
+        run: >
+          dotnet test TeweRestApi.sln --no-build
+          --collect:"XPlat Code Coverage"
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: End analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"

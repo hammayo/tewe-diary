@@ -112,7 +112,7 @@ See [testing.md](testing.md).
   keeping it at root preserves the scripts' `$SCRIPT_DIR/..` repo-root detection and every
   external caller (`.run`, CI, docs), so only non-executable helpers were grouped into
   `scripts/helpers/`.
-- **`Data/` (generated ndjson) and `_task/` (working specs/plans) are gitignored** — generated
+- **`Data/` (generated ndjson) and `_tasks/` (working specs/plans) are gitignored** — generated
   data and in-flight planning docs don't belong in version control.
 - **Postman collection** lives under `Ops.Tools/Postman/` alongside the DB CLI as operational tooling.
 

@@ -31,23 +31,26 @@ switch (command)
         return 0;
 
     case "import":
-        var path = args.ElementAtOrDefault(1);
-        if (string.IsNullOrWhiteSpace(path))
+        // One or more NDJSON files: they are staged together, so a movie in two files is imported once
+        // (the transform dedupes on tmdb_id) and movies already in the db are refreshed in place.
+        var paths = args.Skip(1).ToList();
+        if (paths.Count == 0)
         {
-            Console.Error.WriteLine("Usage: import <path-to-ndjson>");
+            Console.Error.WriteLine("Usage: import <path-to-ndjson> [more-ndjson...]");
             return 1;
         }
 
-        if (!File.Exists(path))
+        var missing = paths.Where(p => !File.Exists(p)).ToList();
+        if (missing.Count > 0)
         {
-            Console.Error.WriteLine($"File not found: {path}");
+            Console.Error.WriteLine($"File(s) not found: {string.Join(", ", missing)}");
             return 1;
         }
 
         var clock = Stopwatch.StartNew();
-        var lines = File.ReadLines(path).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+        var lines = paths.SelectMany(File.ReadLines).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
         var withDetails = lines.Count(l => l.Contains("\"credits\":"));
-        Console.WriteLine($"[1/3] Staging {lines.Count} movies ({withDetails} with details) from {path}...");
+        Console.WriteLine($"[1/3] Staging {lines.Count} movies ({withDetails} with details) from {paths.Count} file(s)...");
 
         var factory = new NpgsqlConnectionFactory(connectionString);
         var staged = await new MovieImporter(factory).ImportAsync(lines, new ConsoleImportProgress(lines.Count, clock));
@@ -61,7 +64,7 @@ switch (command)
             Console.WriteLine($"[3/3] TMDB movies with details: {enriched} / {tmdb}");
         }
 
-        Console.WriteLine($"Imported {staged} line(s) from {path} in {ConsoleImportProgress.Format(clock.Elapsed)}.");
+        Console.WriteLine($"Imported {staged} line(s) from {string.Join(", ", paths)} in {ConsoleImportProgress.Format(clock.Elapsed)}.");
         return 0;
 
     default:

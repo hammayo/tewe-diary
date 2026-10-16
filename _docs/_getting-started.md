@@ -88,3 +88,14 @@ curl -sk "https://localhost:7001/api/v1/movies?title=blade&page=1&pageSize=10"
 
 See [api.md](api.md) for the full endpoint surface, auth tiers, and error contract.
 To populate real data, see the [TMDB import runbook](tmdb-import.md).
+
+## Code quality (SonarCloud)
+
+`.github/workflows/sonarcloud.yml` builds, runs the tests with coverage and sends the result to SonarCloud on every push to `main` and every pull request. One-time setup:
+
+1. In SonarCloud choose **Analyze new project** and import `hammayo/tewe-diary`. The workflow assumes the organisation key `hammayo` and the project key `hammayo_tewe-diary`; if SonarCloud shows different keys, change `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY` at the top of the workflow.
+2. Under **Administration, Analysis Method** turn off **Automatic Analysis**. It cannot run alongside the workflow, and only the workflow reports coverage.
+3. Create a token (SonarCloud, **My Account, Security**) and add it to the GitHub repository as the secret `SONAR_TOKEN`.
+4. Push. The first run creates the quality gate result; the badge in the README reads from it.
+
+Pull requests from forks are skipped, because GitHub does not give them the secret.

@@ -1,19 +1,26 @@
 # TeweRestApi
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hammayo_tewe-diary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hammayo_tewe-diary)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/hammayo/tewe-diary/deploy.yml?branch=main&label=deploy&logo=githubactions&logoColor=white)](https://github.com/hammayo/tewe-diary/actions/workflows/deploy.yml)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Azure](https://img.shields.io/badge/Azure-App%20Service-0078D4?logo=microsoftazure&logoColor=white)](_docs/azure-deployment.md)
 
-A production-shaped **.NET 9 REST API** for movies and ratings — a backend portfolio
-piece that shows decisions an engineer I make end to end: clean layering, versioned
-REST design, JWT + policy-based authorization, output caching, validation, Dapper/Postgres
-with versioned migrations, a generated client SDK, a containerised local stack, a data
-pipeline, and a full build → test → migrate → deploy path to Azure.
+A movie diary API: browse around 10,000 films imported from TMDB, rate the ones
+you've seen and get your ratings back. I built it in .NET 9 as a portfolio piece,
+so the films are the excuse and the engineering is the point.
 
-> The goal isn't feature count — it's **where boundaries go, how auth is modelled, how the
-> data layer stays testable and how the whole thing ships.**
+It's production-shaped rather than feature-heavy. A separate Identity service issues
+JWTs and the Movies API authorises against them with policies. Postgres sits behind
+Dapper, with FluentMigrator owning the schema and separate least-privilege roles for
+migrations, imports and runtime. Integration tests run against a real database in
+Testcontainers. A script-and-CLI pipeline pulls and enriches the TMDB catalogue, and
+GitHub Actions builds, tests, migrates and deploys to Azure.
+
+> What I want a reader to see is where the boundaries sit, how authorisation is
+> modelled, how the data layer stays testable and how the whole thing ships. Each
+> trade-off, and when I'd revisit it, is in my [Design decisions](_docs/design-decisions.md).
 
 ## What it demonstrates
 
@@ -75,6 +82,16 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Minimal API v2** — a parallel `v2` surface built with **.NET Minimal APIs** will land in
-  a dedicated **feature branch**, running side by side with the v1 controllers (URL-segment
-  versioning already supports it); the SDK will grow a v2 client alongside it.
+- **Minimal API v2.** A parallel `v2` surface built with .NET Minimal APIs, developed
+  in a feature branch and running beside the v1 controllers. URL-segment versioning
+  already supports this, and the SDK will gain a v2 client alongside it.
+- **React frontend.** A small React app that exercises the API end to end, so a reviewer
+  can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
+  the JWT in memory and shows what each authorisation tier unlocks:
+  - anonymous: the poster grid with title and year filters, sorting and paging, and a
+    movie page built from the single GET (overview, tagline, trailer, director, writers
+    and cast)
+  - any signed-in user: rating and un-rating a movie, and a 'My ratings' view
+  - `Trusted`: creating and editing movies, with validation errors shown inline from the
+    `400` contract
+  - `Admin`: deleting movies

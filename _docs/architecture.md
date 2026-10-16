@@ -79,7 +79,7 @@ HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (polic
 Supporting folders: `scripts/` (dev/ops shell scripts + SQL/jq helpers under
 `scripts/helpers/`), `Ops.Tools/Postman/` (Postman collection + environment),
 `Data/` (generated TMDB ndjson — gitignored), `_docs/` (this documentation),
-`_task/` (working specs/plans — gitignored).
+`_tasks/` (working specs/plans — gitignored).
 
 The solution's virtual folders (`Sdk`, `Tests`, `Ops.Tools`, `IAM`) mirror this
 on-disk layout.

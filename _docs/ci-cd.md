@@ -40,7 +40,7 @@ Credentials are split by privilege:
 `.github/workflows/import.yml` fetches from TMDB and imports via the CLI:
 
 ```
-scripts/fetch-tmdb.sh  ─→  Data/tmdb-movies.ndjson  ─→  dotnet run --project Ops.Tools/Movies.DbTool -- import Data/tmdb-movies.ndjson
+scripts/fetch-tmdb.sh  ─→  Data/tmdb-<fetch>.ndjson  ─→  dotnet run --project Ops.Tools/Movies.DbTool -- import Data/*.ndjson
 ```
 
 See the [TMDB import runbook](tmdb-import.md) for the full data path.

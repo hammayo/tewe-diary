@@ -3,7 +3,8 @@
 -- transform only load data and must never define or alter structure.
 --
 -- Run inside the db container after copying the NDJSON + transform into /tmp:
---   docker cp Data/tmdb-movies.ndjson  <db>:/tmp/tmdb-movies.ndjson
+--   docker cp Data/<fetch>.ndjson  <db>:/tmp/tmdb-movies.ndjson   (scripts/load-movies.sh concatenates
+--                                                                   several fetches into this one file)
 --   docker cp scripts/helpers/import-transform.sql  <db>:/tmp/import-transform.sql
 --   docker cp scripts/helpers/import-movies.sql     <db>:/tmp/import-movies.sql
 --   docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
