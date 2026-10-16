@@ -20,10 +20,9 @@ public static class WebApplicationExtensions
             app.UseSwagger();
             app.UseSwaggerUI(x =>
             {
-                foreach (var description in app.DescribeApiVersions())
+                foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
                 {
-                    x.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                        description.GroupName);
+                    x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
                 }
             });
         }
@@ -71,9 +70,9 @@ public static class WebApplicationExtensions
             {
                 if (attempt == maxAttempts)
                 {
-                    app.Logger.LogError(
-                        "Database still not reachable after {MaxAttempts} attempts: {Message}. The service is running but database calls will fail until Postgres is available. Start it with: docker compose up -d",
-                        maxAttempts, ex.Message);
+                    app.Logger.LogError(ex,
+                        "Database still not reachable after {MaxAttempts} attempts. The service is running but database calls will fail until Postgres is available. Start it with: docker compose up -d",
+                        maxAttempts);
                     return;
                 }
 

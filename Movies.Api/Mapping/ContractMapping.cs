@@ -67,7 +67,7 @@ public static class ContractMapping
             Tagline = details.Tagline,
             RuntimeMinutes = details.RuntimeMinutes,
             BackdropUrl = urls.Backdrop(details.BackdropPath),
-            Trailer = details.Trailer?.MapToResponse(urls),
+            Trailer = details.Trailer?.MapToResponse(),
             Directors = details.Directors.Select(credit => credit.MapToResponse(urls)).ToList(),
             Writers = details.Writers.Select(credit => credit.MapToResponse(urls)).ToList(),
             Cast = details.Cast.Select(credit => credit.MapToResponse(urls)).ToList()
@@ -75,10 +75,10 @@ public static class ContractMapping
     }
 
     // Null when the site has no known URL format, so clients never receive a broken player link.
-    private static TrailerResponse? MapToResponse(this MovieTrailer trailer, TmdbUrlBuilder urls)
+    private static TrailerResponse? MapToResponse(this MovieTrailer trailer)
     {
-        var url = urls.TrailerUrl(trailer.Site, trailer.Key);
-        var embedUrl = urls.TrailerEmbedUrl(trailer.Site, trailer.Key);
+        var url = TmdbUrlBuilder.TrailerUrl(trailer.Site, trailer.Key);
+        var embedUrl = TmdbUrlBuilder.TrailerEmbedUrl(trailer.Site, trailer.Key);
         if (url is null || embedUrl is null)
         {
             return null;

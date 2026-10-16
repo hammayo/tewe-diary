@@ -313,8 +313,8 @@ enrich_progress() {
     "$completed" "$total" "$pct" "$failed" "$(fmt_duration "$elapsed")" "$eta" >&2
 }
 
-# Enrich every fetched movie with its details, credits and trailer (one /movie/{id} call each,
-# 8 in parallel to stay under TMDB's rate limit), then rewrite $OUT in the details shape.
+# Enrich every fetched movie with its details, credits and trailer (one /movie/{id} call each, 50 per curl so the connection is
+# reused, 8 curls in parallel to stay under TMDB's rate limit), then rewrite $OUT in the details shape.
 # Failed ids are skipped and reported, never fatal (PRD FR-10, D15).
 enrich() {
   local work total ok
@@ -325,7 +325,7 @@ enrich() {
 
   # Fetch in the background and report progress while it runs (see watch_pid in helpers/progress.sh).
   TMDB_API="$API" TMDB_AUTH_HEADER="$AUTH_HEADER" TMDB_KEY_QS="$KEY_QS" \
-    xargs -P 8 -n 1 "$SCRIPT_DIR/helpers/fetch-tmdb-detail.sh" "$work" < "$work/ids.txt" &
+    xargs -P 8 -n 50 "$SCRIPT_DIR/helpers/fetch-tmdb-detail.sh" "$work" < "$work/ids.txt" &
   watch_pid $! enrich_progress "$work" "$total" "$SECONDS"
 
   find "$work" -name '*.json' -print0 \

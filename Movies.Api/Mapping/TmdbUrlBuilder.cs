@@ -20,14 +20,14 @@ public class TmdbUrlBuilder
 
     public string? Profile(string? path) => Image(_images.ProfileSize, path);
 
-    public string? TrailerUrl(string site, string key) => site switch
+    public static string? TrailerUrl(string site, string key) => site switch
     {
         "YouTube" => $"https://www.youtube.com/watch?v={Uri.EscapeDataString(key)}",
         "Vimeo" => $"https://vimeo.com/{Uri.EscapeDataString(key)}",
         _ => null
     };
 
-    public string? TrailerEmbedUrl(string site, string key) => site switch
+    public static string? TrailerEmbedUrl(string site, string key) => site switch
     {
         "YouTube" => $"https://www.youtube.com/embed/{Uri.EscapeDataString(key)}",
         "Vimeo" => $"https://player.vimeo.com/video/{Uri.EscapeDataString(key)}",

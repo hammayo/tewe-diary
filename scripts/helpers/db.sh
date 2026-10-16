@@ -1,8 +1,12 @@
-# Docker db helpers shared by the ops scripts (sourced, not executed). Needs REPO_ROOT set.
+# Docker db helpers shared by the ops scripts (sourced, not executed).
+#
+# Talks to the db container with plain `docker exec`/`docker cp`, not `docker compose`: every compose
+# call costs ~3s of startup, which dwarfed the work itself. The name is container_name in docker-compose.yml.
+DB_CONTAINER="${DB_CONTAINER:-tewe-db}"
 
 # Runs SQL from stdin in the db container: unaligned, space-separated, no headers; errors fail the call.
 db_query() {
-  docker compose -f "$REPO_ROOT/docker-compose.yml" exec -T db \
+  docker exec -i "$DB_CONTAINER" \
     sh -c 'psql -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -F " " -v ON_ERROR_STOP=1'
 }
 

@@ -35,13 +35,19 @@ public class MovieSlugTests
             "Chompoo: Lost & Forgotten", "Ginza no jirochō", "Debtor’s Wife",
         };
 
-        // Act & Assert (must not throw)
-        for (var i = 0; i < 500; i++)
+        // Act
+        var exception = Record.Exception(() =>
         {
-            foreach (var title in titles)
+            for (var i = 0; i < 500; i++)
             {
-                _ = new Movie { Id = Guid.NewGuid(), Title = title, YearOfRelease = 2024, Genres = [] }.Slug;
+                foreach (var title in titles)
+                {
+                    _ = new Movie { Id = Guid.NewGuid(), Title = title, YearOfRelease = 2024, Genres = [] }.Slug;
+                }
             }
-        }
+        });
+
+        // Assert
+        Assert.Null(exception);
     }
 }

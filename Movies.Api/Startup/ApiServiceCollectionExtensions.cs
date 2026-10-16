@@ -39,22 +39,20 @@ public static class ApiServiceCollectionExtensions
             .AddApiVersioningInternal()
             .AddApiCaching()
             .AddApiDocumentation()
-            .AddApiInfrastructure()
-            .AddApiPersistence(config)
-            .AddTmdb(config);
+            .AddApiInfrastructure();
+        builder.Services.AddApiPersistence(config);
+        builder.Services.AddTmdb(config);
 
         return builder;
     }
 
-    private static IServiceCollection AddTmdb(this IServiceCollection services, IConfiguration config)
+    private static void AddTmdb(this IServiceCollection services, IConfiguration config)
     {
         services.Configure<TmdbImageOptions>(config.GetSection(TmdbImageOptions.SectionName));
         services.AddSingleton<TmdbUrlBuilder>();
         // MovieLinkBuilder resolves hrefs against the current request.
         services.AddHttpContextAccessor();
         services.AddSingleton<MovieLinkBuilder>();
-
-        return services;
     }
 
     private static IServiceCollection AddApiAuthentication(this IServiceCollection services, IConfiguration config)
@@ -87,16 +85,13 @@ public static class ApiServiceCollectionExtensions
 
     private static IServiceCollection AddApiAuthorization(this IServiceCollection services)
     {
-        services.AddAuthorization(x =>
-        {
-            x.AddPolicy(AuthConstants.AdminUserPolicyName,
-                p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"));
-
-            x.AddPolicy(AuthConstants.TrustedMemberPolicyName,
+        services.AddAuthorizationBuilder()
+            .AddPolicy(AuthConstants.AdminUserPolicyName,
+                p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"))
+            .AddPolicy(AuthConstants.TrustedMemberPolicyName,
                 p => p.RequireAssertion(c =>
                     c.User.HasClaim(m => m is { Type: AuthConstants.AdminUserClaimName, Value: "true" }) ||
                     c.User.HasClaim(m => m is { Type: AuthConstants.TrustedMemberClaimName, Value: "true" })));
-        });
 
         services.AddScoped<ApiKeyAuthFilter>();
 
@@ -163,7 +158,7 @@ public static class ApiServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddApiPersistence(this IServiceCollection services, IConfiguration config)
+    private static void AddApiPersistence(this IServiceCollection services, IConfiguration config)
     {
         // Connection details + SSL are resolved through DatabaseOptions (shared with Movies.DbTool). A
         // full connection string (e.g. from Key Vault) wins; otherwise it's built from the POSTGRES_*
@@ -173,7 +168,5 @@ public static class ApiServiceCollectionExtensions
 
         services.AddApplication();
         services.AddDatabase(databaseOptions.BuildConnectionString());
-
-        return services;
     }
 }

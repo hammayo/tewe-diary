@@ -14,6 +14,8 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public IOutputCacheStore CacheStore => Factory.CacheStore;
 
+    public string ConnectionString => _postgres.ConnectionString;
+
     public async Task InitializeAsync()
     {
         await _postgres.InitializeAsync();

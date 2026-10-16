@@ -20,7 +20,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE=(docker compose -f "$REPO_ROOT/docker-compose.yml")
 # shellcheck source=helpers/progress.sh
 . "$SCRIPT_DIR/helpers/progress.sh"
 # shellcheck source=helpers/db.sh
@@ -53,19 +52,17 @@ done
 lines="$(grep -c . "$staged" || true)"
 unique="$(jq -r '.tmdb_id' "$staged" 2>/dev/null | sort -u | wc -l | tr -d ' ')"
 
-# docker compose cp streams its progress UI to stderr; quiet it (set -e still
-# aborts on a failed copy).
 echo "[1/3] Copying ${#FILES[@]} file(s), $lines lines ($unique unique movies) + loaders into the db container..."
-"${COMPOSE[@]}" cp "$staged" db:/tmp/tmdb-movies.ndjson 2>/dev/null
-"${COMPOSE[@]}" cp "$SCRIPT_DIR/helpers/import-transform.sql" db:/tmp/import-transform.sql 2>/dev/null
-"${COMPOSE[@]}" cp "$SCRIPT_DIR/helpers/import-movies.sql" db:/tmp/import-movies.sql 2>/dev/null
+docker cp "$staged" "$DB_CONTAINER":/tmp/tmdb-movies.ndjson
+docker cp "$SCRIPT_DIR/helpers/import-transform.sql" "$DB_CONTAINER":/tmp/import-transform.sql
+docker cp "$SCRIPT_DIR/helpers/import-movies.sql" "$DB_CONTAINER":/tmp/import-movies.sql
 
 # psql prints per-statement command tags (BEGIN/COPY/INSERT/...) to stdout and the import NOTICE
 # summary (and any error) to stderr. Run it in the background, keep stderr for the summary.
 echo "[2/3] Importing in one transaction (stage, upsert movies/genres/metadata, details, credits)..."
 log="$(mktemp)"
 trap 'rm -f "$staged" "$log"' EXIT
-"${COMPOSE[@]}" exec -T db \
+docker exec -i "$DB_CONTAINER" \
   sh -c 'psql -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /tmp/import-movies.sql' \
   >/dev/null 2>"$log" &
 
