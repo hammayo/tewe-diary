@@ -2,7 +2,7 @@
 .env
 
 ## Working docs (PRD plans/specs docs) excluded from git for now
-_task/
+_tasks/
 
 ## AI assistant working directory
 .ai/
