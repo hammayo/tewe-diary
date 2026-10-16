@@ -147,7 +147,7 @@ public class MovieRepository : IMovieRepository
             left join ratings myr on m.id = myr.movieid
                 and myr.userid = @userId
             left join movie_details md on m.id = md.movieid
-            where (@title is null or m.title like ('%' || @title || '%'))
+            where (@title is null or m.title ilike ('%' || @title || '%'))
             and  (@yearofrelease is null or m.yearofrelease = @yearofrelease)
             group by id, userrating, md.poster_path {orderClause}
             limit @pageSize
@@ -239,7 +239,7 @@ public class MovieRepository : IMovieRepository
         return await connection.QuerySingleAsync<int>(new CommandDefinition("""
             select count(id)
             from movies
-            where (@title is null or title like ('%' || @title || '%'))
+            where (@title is null or title ilike ('%' || @title || '%'))
             and  (@yearOfRelease is null or yearofrelease = @yearOfRelease)
             """, new
         {
