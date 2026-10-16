@@ -30,8 +30,9 @@ TMDB API ──fetch-tmdb.sh (list/discover/trending, then enrich: one
 
 After the chosen mode writes its list, `fetch-tmdb.sh` always enriches every movie:
 
-- **One call per movie:** `helpers/fetch-tmdb-detail.sh` runs 8 in parallel through `xargs -P 8`,
-  with `curl --retry 5` on 429/5xx. A full run is about 10k calls and takes a few minutes.
+- **One call per movie:** `helpers/fetch-tmdb-detail.sh` runs 8 in parallel through `xargs -P 8 -n 50`.
+  Each worker passes 50 ids to a single `curl`, so the TLS connection is reused instead of a fresh
+  handshake per movie. `curl --retry 5` covers 429/5xx. A full run is about 10k calls and takes a few minutes.
 - **Trimmed before storage:** `helpers/tmdb-details-to-ndjson.jq` keeps the top 10 cast, the
   director(s), and writers with job Screenplay, Writer, Story, Novel or Author. That's about
   3.5 KB per movie against about 86 KB untrimmed.
