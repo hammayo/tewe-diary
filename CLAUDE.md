@@ -53,4 +53,4 @@ bash scripts/stack-up.sh
 dotnet test TeweRestApi.sln
 ```
 
-CI and deployment: `_docs/ci-cd.md`.
+CI and deployment: `_docs/ci-cd.md`. SonarCloud analysis: `.github/workflows/sonarcloud.yml` (setup in `_docs/_getting-started.md`).

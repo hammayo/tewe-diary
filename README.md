@@ -1,5 +1,6 @@
 # TeweRestApi
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hammayo_tewe-diary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hammayo_tewe-diary)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/hammayo/tewe-diary/deploy.yml?branch=main&label=deploy&logo=githubactions&logoColor=white)](https://github.com/hammayo/tewe-diary/actions/workflows/deploy.yml)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
