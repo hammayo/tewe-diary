@@ -94,8 +94,10 @@ To populate real data, see the [TMDB import runbook](tmdb-import.md).
 `.github/workflows/sonarcloud.yml` builds, runs the tests with coverage and sends the result to SonarCloud on every push to `main` and every pull request. One-time setup:
 
 1. In SonarCloud choose **Analyze new project** and import `hammayo/tewe-diary`. The workflow assumes the organisation key `hammayo` and the project key `hammayo_tewe-diary`; if SonarCloud shows different keys, change `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY` at the top of the workflow.
-2. Under **Administration, Analysis Method** turn off **Automatic Analysis**. It cannot run alongside the workflow, and only the workflow reports coverage.
-3. Create a token (SonarCloud, **My Account, Security**) and add it to the GitHub repository as the secret `SONAR_TOKEN`.
+2. Under [**Administration, Analysis Method**](https://sonarcloud.io/project/analysis_method?id=hammayo_tewe-diary) turn off **Automatic Analysis**. It cannot run alongside the workflow, and only the workflow reports coverage.
+3. Create a [token](https://sonarcloud.io/account/security) and add it to the GitHub repository as the [secret `SONAR_TOKEN`](https://github.com/hammayo/tewe-diary/settings/secrets/actions).
 4. Push. The first run creates the quality gate result; the badge in the README reads from it.
 
 Pull requests from forks are skipped, because GitHub does not give them the secret.
+
+To scan locally, put the same token in `.env` as `SONAR_TOKEN` and run `bash scripts/sonar-scan.sh` (or the Rider **Sonar Scan** run configuration). It needs Java 17+ and Docker; `--no-tests` skips coverage.
