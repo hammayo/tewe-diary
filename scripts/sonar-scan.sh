@@ -4,7 +4,8 @@
 # Mirrors .github/workflows/sonarcloud.yml. Needs Java 17+ and Docker (Testcontainers).
 #
 # Usage:
-# # Generate PAT token: https://sonarcloud.io/account/access-tokens
+# Turn off automatic code analysis: https://sonarcloud.io/project/analysis_method?id=hammayo_tewe-diary
+# Generate PAT token: https://sonarcloud.io/account/access-tokens
 #   SONAR_TOKEN=<token> scripts/sonar-scan.sh
 #   SONAR_TOKEN=<token> scripts/sonar-scan.sh --no-tests   # issues only, no coverage
 set -euo pipefail

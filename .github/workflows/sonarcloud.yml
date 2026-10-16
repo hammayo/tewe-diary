@@ -1,7 +1,12 @@
 name: SonarCloud
 
 # Builds, runs the whole test suite (Testcontainers needs Docker, which the runner has) and sends the
-# results and coverage to SonarCloud. One-time setup is in _docs/_getting-started.md.
+# results and coverage to SonarCloud. One-time setup (full steps in _docs/_getting-started.md):
+#   - Turn off Automatic Analysis, or this job fails:
+#       https://sonarcloud.io/project/analysis_method?id=hammayo_tewe-diary
+#   - Create a token: https://sonarcloud.io/account/security
+#   - Add it as the SONAR_TOKEN repository secret:
+#       https://github.com/hammayo/tewe-diary/settings/secrets/actions
 on:
   push:
     branches: [main]
