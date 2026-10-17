@@ -1,10 +1,11 @@
 # Movies.Api container image for Azure App Service (Web App for Containers).
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+ARG DOTNET_VERSION=9.0
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
 
 # Restore layer: copy only what restore needs (with central package management) so this caches
 # unless dependencies change.
-COPY backend/Directory.Packages.props backend/
+COPY backend/Directory.Build.props backend/Directory.Packages.props backend/global.json backend/
 COPY backend/src/Movies.Api/Movies.Api.csproj backend/src/Movies.Api/
 COPY backend/src/Movies.Application/Movies.Application.csproj backend/src/Movies.Application/
 COPY backend/src/Movies.Contracts/Movies.Contracts.csproj backend/src/Movies.Contracts/
@@ -15,7 +16,7 @@ RUN dotnet restore backend/src/Movies.Api/Movies.Api.csproj
 COPY . .
 RUN dotnet publish backend/src/Movies.Api/Movies.Api.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS final
 WORKDIR /app
 
 # curl is used by the container health check (the runtime image has no HTTP client otherwise).
@@ -23,7 +24,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Run as the non-root `app` user shipped with the .NET 9 image (port 8080 needs no privileges).
+# Run as the non-root `app` user shipped with the .NET images (port 8080 needs no privileges).
 USER app
 
 COPY --from=build /app ./

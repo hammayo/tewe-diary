@@ -23,13 +23,11 @@ name: Deploy
 on:
   push:
     branches: [ main ]
+    paths-ignore: [ "frontend/**" ]
   workflow_dispatch:
 
 permissions:
   contents: read
-
-env:
-  DOTNET_VERSION: '9.0.x'
 
 jobs:
   test:
@@ -38,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: backend/global.json
       # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
       - run: dotnet test backend/TeweDiary.sln --configuration Release
 
@@ -77,7 +75,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: backend/global.json
 
       - name: Migrate database
         env:

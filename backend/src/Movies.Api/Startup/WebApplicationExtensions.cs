@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using Movies.Api.Endpoints.V2;
 using Movies.Api.Mapping;
 using Movies.Application.Database;
 using Movies.Application.Database.Migrations;
@@ -38,6 +39,7 @@ public static class WebApplicationExtensions
 
         app.UseMiddleware<ValidationMappingMiddleware>();
         app.MapControllers();
+        app.MapMoviesV2();
 
         return app;
     }

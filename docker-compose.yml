@@ -83,5 +83,17 @@ services:
       - JWT_AUDIENCE=${JWT_AUDIENCE}
       - API_KEY=${API_KEY}
 
+  # Frontend shell: static build served by nginx on Vite's default dev port, so `npm run dev`
+  # and the container share one URL. VITE_API_URL is baked in at build time.
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: tewe-frontend
+    restart: unless-stopped
+    ports:
+      - '5173:80'
+
 volumes:
   pgdata:

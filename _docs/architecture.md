@@ -55,7 +55,7 @@ TMDB details are read-only from the API's point of view.
 
 ```
 HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (policy) ─→
-  controller ─→ ContractMapping (DTO→domain) ─→ Service (+ FluentValidation) ─→
+  controller (v1) or Minimal API endpoint (v2, `Endpoints/V2/`) ─→ ContractMapping (DTO→domain) ─→ Service (+ FluentValidation) ─→
   Repository (Dapper) ─→ PostgreSQL
                      ▲
    ValidationMappingMiddleware turns validation failures into 400 payloads;
@@ -71,10 +71,18 @@ HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (polic
 | Movies.Application      | `backend/src/Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import |
 | Movies.Api              | `backend/src/Movies.Api/`                  | Web API — controllers, contract mapping, auth, caching, Swagger, health                      |
 | Identity.Api            | `backend/src/Identity.Api/`                | Issues the JWTs the Movies API validates                                                     |
+| Frontend                | `frontend/`                                | React shell (Vite + TypeScript), served by nginx. Placeholder until the frontend PRD         |
 | Movies.Api.Sdk          | `backend/sdk/Movies.Api.Sdk/`          | Refit client SDK (references Contracts)                                                      |
 | Movies.Api.Sdk.Consumer | `backend/sdk/Movies.Api.Sdk.Consumer/` | Example console consumer of the SDK                                                          |
 | Movies.DbTool           | `backend/tools/Movies.DbTool/`     | CLI: `migrate` and `import <ndjson>`                                                         |
 | Tests                   | `backend/tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
+
+The target framework, `Nullable` and `ImplicitUsings` are set once in `backend/Directory.Build.props`, and the SDK is
+pinned in `backend/global.json`. CI reads the SDK from `global.json`; the Dockerfiles take the image tag from the
+`DOTNET_VERSION` build argument. Moving to a new .NET version means changing those three places.
+
+v2 is a set of Minimal API endpoints inside `Movies.Api` (`Endpoints/V2/`), running beside the v1 controllers on the
+same host, auth, versioning and output cache. It currently has one read endpoint to prove the wiring.
 
 Supporting folders: `scripts/` (dev/ops shell scripts + SQL/jq helpers under
 `scripts/helpers/`), `backend/tools/Postman/` (Postman collection + environment),

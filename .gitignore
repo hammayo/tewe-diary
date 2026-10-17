@@ -98,3 +98,7 @@ Desktop.ini
 ## Rider / dotCover
 _TeamCity*
 *.dotCover
+
+## Frontend
+frontend/node_modules/
+frontend/dist/

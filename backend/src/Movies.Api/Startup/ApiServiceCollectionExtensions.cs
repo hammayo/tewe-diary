@@ -128,6 +128,8 @@ public static class ApiServiceCollectionExtensions
 
     private static IServiceCollection AddApiDocumentation(this IServiceCollection services)
     {
+        // Lets Swagger see the v2 Minimal API endpoints; controllers are described by the MVC explorer.
+        services.AddEndpointsApiExplorer();
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
         services.AddSwaggerGen(x => x.OperationFilter<SwaggerDefaultValues>());
 

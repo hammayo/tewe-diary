@@ -18,7 +18,8 @@ A production-shaped .NET 9 REST API for movies and ratings. It is a portfolio pi
 - Secrets and per-environment values go in `.env` (gitignored, tracked `.env.example`). Non-secret tuning goes in `appsettings.json`. Nothing is hardcoded in C#
 - Authorisation is policy-based (`Admin`, `Trusted`), with the JWT signing secret shared with Identity
 - Writes evict the output-cache tag for movies
-- Central package management (`backend/Directory.Packages.props`)
+- Central package management (`backend/Directory.Packages.props`). The target framework lives in `backend/Directory.Build.props`, not in the `.csproj` files
+- v2 is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, beside the v1 controllers. `frontend/` is the React app and builds on its own
 
 ## This repo's stack is not a violation
 

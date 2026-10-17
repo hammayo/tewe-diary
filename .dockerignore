@@ -13,3 +13,4 @@ data/
 .certs/
 .sonarqube/
 _tasks/
+frontend/

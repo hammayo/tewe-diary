@@ -37,9 +37,11 @@ public sealed class SwaggerDefaultValues : IOperationFilter
             var description = apiDescription.ParameterDescriptions
                 .First(p => p.Name == parameter.Name);
 
-            parameter.Description ??= description.ModelMetadata.Description;
+            parameter.Description ??= description.ModelMetadata?.Description;
 
-            if (parameter.Schema.Default == null && description.DefaultValue != null)
+            // Minimal API parameters report DBNull for "no default" and may have no model metadata.
+            if (parameter.Schema.Default == null && description.DefaultValue is not (null or DBNull)
+                && description.ModelMetadata is not null)
             {
                 var json = JsonSerializer.Serialize(
                     description.DefaultValue,
