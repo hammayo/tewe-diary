@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+      <PackageReference Include="Dapper" />
+      <PackageReference Include="FluentMigrator" />
+      <PackageReference Include="FluentMigrator.Runner" />
+      <PackageReference Include="FluentMigrator.Runner.Postgres" />
+      <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Npgsql" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Single source of truth: the import transform lives in scripts/helpers/ and is embedded so the
+           MovieImporter runs the exact same SQL as the psql-based ops path. -->
+      <EmbeddedResource Include="..\..\..\scripts\helpers\import-transform.sql">
+        <LogicalName>Movies.Application.import-transform.sql</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+</Project>

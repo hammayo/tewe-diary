@@ -27,7 +27,7 @@ services:
   identity-api:
     build:
       context: .
-      dockerfile: Dockerfile.identity
+      dockerfile: backend/Dockerfile.identity
     container_name: tewe-identity-api
     restart: unless-stopped
     ports:
@@ -50,7 +50,7 @@ services:
   movies-api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: tewe-movies-api
     restart: unless-stopped
     depends_on:
@@ -82,6 +82,18 @@ services:
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}
       - API_KEY=${API_KEY}
+
+  # Frontend shell: static build served by nginx on Vite's default dev port, so `npm run dev`
+  # and the container share one URL. VITE_API_URL is baked in at build time.
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://localhost:7001}
+    container_name: tewe-frontend
+    restart: unless-stopped
+    ports:
+      - '5173:8080'
 
 volumes:
   pgdata:

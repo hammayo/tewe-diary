@@ -21,7 +21,7 @@
 #   --sort FIELD --min-rating X --min-votes N --list NAME --trending [day|week] --ids-file PATH
 #   --dry-run (print what would be fetched, then stop)
 #
-# Each run writes Data/tmdb-<what-was-fetched>.ndjson (e.g. tmdb-discover-vote_average.desc-v1000.ndjson,
+# Each run writes data/tmdb-<what-was-fetched>.ndjson (e.g. tmdb-discover-vote_average.desc-v1000.ndjson,
 # tmdb-list-popular.ndjson, tmdb-trending-week.ndjson), so a new pull never overwrites an earlier one.
 # Override with --out PATH. Load them all with scripts/load-movies.sh (duplicates are collapsed).
 #
@@ -37,7 +37,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LIST=""
 PAGES=500  # TMDB caps discover/list at page 500; requesting more returns HTTP 400
-OUT=""   # default: Data/tmdb-<what-was-fetched>.ndjson (see default_out below)
+OUT=""   # default: data/tmdb-<what-was-fetched>.ndjson (see default_out below)
 YEAR=""
 GENRE=""
 ORIG_LANG=""
@@ -195,12 +195,12 @@ default_out() {
   # Named after the preset the caller used (tmdb-classics.ndjson), so the file matches the command.
   # Only a raw-flag run falls through to the mode+filters name.
   case "$PRESET" in
-    newest)   printf '%s/Data/tmdb-newest.ndjson' "$ROOT_DIR"; return ;;
-    classics) printf '%s/Data/tmdb-classics%s.ndjson' "$ROOT_DIR" \
+    newest)   printf '%s/data/tmdb-newest.ndjson' "$ROOT_DIR"; return ;;
+    classics) printf '%s/data/tmdb-classics%s.ndjson' "$ROOT_DIR" \
                 "$([ "${MIN_VOTES:-1000}" = 1000 ] || printf -- '-v%s' "$MIN_VOTES")"; return ;;
     popular|top-rated|now-playing)
-              printf '%s/Data/tmdb-%s.ndjson' "$ROOT_DIR" "$PRESET"; return ;;
-    trending) printf '%s/Data/tmdb-trending-%s.ndjson' "$ROOT_DIR" "$TRENDING"; return ;;
+              printf '%s/data/tmdb-%s.ndjson' "$ROOT_DIR" "$PRESET"; return ;;
+    trending) printf '%s/data/tmdb-trending-%s.ndjson' "$ROOT_DIR" "$TRENDING"; return ;;
     year)     name="year-$YEAR${GENRE:+-$GENRE}" ;;
     genre)    name="genre-$GENRE" ;;
     language) name="language-$ORIG_LANG" ;;
@@ -220,7 +220,7 @@ default_out() {
       ;;
   esac ;;
   esac
-  printf '%s/Data/tmdb-%s.ndjson' "$ROOT_DIR" \
+  printf '%s/data/tmdb-%s.ndjson' "$ROOT_DIR" \
     "$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g; s/--*/-/g')"
 }
 

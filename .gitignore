@@ -11,7 +11,7 @@ _tasks/
 .ai/
 
 ## Generated data output
-Data/*.ndjson
+data/*.ndjson
 
 ## .NET build output
 [Bb]in/
@@ -48,9 +48,10 @@ bld/
 *.rsuser
 
 ## JetBrains Rider
+backend/.idea/
 .idea/*
-.idea/.idea.TeweRestApi/*
-.idea/.idea.TeweRestApi/.idea/*
+.idea/.idea.TeweDiary/*
+.idea/.idea.TeweDiary/.idea/*
 
 *.sln.iml
 _ReSharper*/
@@ -98,3 +99,7 @@ Desktop.ini
 ## Rider / dotCover
 _TeamCity*
 *.dotCover
+
+## Frontend
+frontend/node_modules/
+frontend/dist/

@@ -1,4 +1,4 @@
-# TeweRestApi
+# Tewe Diary
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hammayo_tewe-diary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hammayo_tewe-diary)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/hammayo/tewe-diary/deploy.yml?branch=main&label=deploy&logo=githubactions&logoColor=white)](https://github.com/hammayo/tewe-diary/actions/workflows/deploy.yml)
@@ -82,10 +82,10 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Minimal API v2.** A parallel `v2` surface built with .NET Minimal APIs, developed
+- **Minimal API v2** (skeleton in place: one read endpoint in `Endpoints/V2/`). A parallel `v2` surface built with .NET Minimal APIs, developed
   in a feature branch and running beside the v1 controllers. URL-segment versioning
   already supports this, and the SDK will gain a v2 client alongside it.
-- **React frontend.** A small React app that exercises the API end to end, so a reviewer
+- **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:
   - anonymous: the poster grid with title and year filters, sorting and paging, and a
