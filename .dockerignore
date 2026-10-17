@@ -9,3 +9,8 @@ Resources/
 **/*.user
 .env
 *.md
+data/
+.certs/
+.sonarqube/
+_tasks/
+frontend/

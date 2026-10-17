@@ -45,7 +45,7 @@ identity map/change tracking would genuinely reduce hand-written plumbing.
 
 ## 3. Schema owned by FluentMigrator migrations, never by import scripts
 
-**Decision.** `Movies.Application/Database/Migrations` is the single owner of DDL. The
+**Decision.** `backend/src/Movies.Application/Database/Migrations` is the single owner of DDL. The
 data scripts and CLI import are **data-only**.
 
 **Rationale.** One authority for schema shape; migrations are versioned, ordered, and run
@@ -108,13 +108,13 @@ See [testing.md](testing.md).
 
 ## 10. Repository housekeeping
 
-- **`scripts/` stays at the repo root** even though `Movies.DbTool` moved under `Ops.Tools/` —
+- **`scripts/` stays at the repo root** even though `Movies.DbTool` moved under `backend/tools/` —
   keeping it at root preserves the scripts' `$SCRIPT_DIR/..` repo-root detection and every
   external caller (`.run`, CI, docs), so only non-executable helpers were grouped into
   `scripts/helpers/`.
-- **`Data/` (generated ndjson) and `_tasks/` (working specs/plans) are gitignored** — generated
+- **`data/` (generated ndjson) and `_tasks/` (working specs/plans) are gitignored** — generated
   data and in-flight planning docs don't belong in version control.
-- **Postman collection** lives under `Ops.Tools/Postman/` alongside the DB CLI as operational tooling.
+- **Postman collection** lives under `backend/tools/Postman/` alongside the DB CLI as operational tooling.
 
 ## 11. Deployment hosting and cost (Basic B1, no slots)
 

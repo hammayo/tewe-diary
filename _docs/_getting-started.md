@@ -34,6 +34,7 @@ is kept comment-free):
 | `JWT_ISSUER`, `JWT_AUDIENCE`          | both APIs                  | Must match on both sides or tokens are rejected                                                                                                                  |
 | `API_KEY`                             | Movies.Api                 | Sent as the `x-api-key` header for admin/ops endpoints                                                                                                           |
 | `ASPNETCORE_DEV_CERT_PASSWORD`        | stack                      | Dev HTTPS cert password. `scripts/stack-up.sh` generates `.certs/aspnet-dev.pfx` with it if missing; any non-empty value works locally                           |
+| `VITE_API_URL`                        | frontend                   | Movies.Api base URL baked into the frontend bundle at build time. `https://localhost:7001` locally                                                               |
 | `TMDB_API_KEY`                        | `scripts/fetch-tmdb.sh`    | Only for data regeneration. Accepts a **v3 API key** (32-char hex) or a **v4 read-access token** (a JWT); the script detects the shape and picks the auth scheme |
 
 ## Run
@@ -57,6 +58,7 @@ is kept comment-free):
 |--------------|------------------------------|------------------------|---------------------------------------------|
 | Movies.Api   | http://localhost:5001        | https://localhost:7001 | Swagger UI at `/swagger` (Development only) |
 | Identity.Api | http://localhost:5003        | https://localhost:7003 | `POST /token`                               |
+| Frontend     | http://localhost:5173        | —                      | Placeholder shell; `npm run dev` uses the same port |
 | Postgres     | `localhost:${POSTGRES_PORT}` | —                      | default `5432`                              |
 
 Health check: `GET http://localhost:5001/_health`.

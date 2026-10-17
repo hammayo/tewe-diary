@@ -24,13 +24,13 @@ dotnet sonarscanner begin \
   /d:sonar.token="$SONAR_TOKEN" \
   /d:sonar.host.url="https://sonarcloud.io" \
   /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-  /d:sonar.coverage.exclusions="Tests/**,Ops.Tools/**" \
+  /d:sonar.coverage.exclusions="backend/tests/**,backend/tools/**" \
   /d:sonar.exclusions="scripts/**"
 
-dotnet build TeweRestApi.sln --no-incremental
+dotnet build backend/TeweDiary.sln --no-incremental
 
 if [[ "${1:-}" != "--no-tests" ]]; then
-  dotnet test TeweRestApi.sln --no-build \
+  dotnet test backend/TeweDiary.sln --no-build \
     --collect:"XPlat Code Coverage" \
     -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 fi

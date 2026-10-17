@@ -1,4 +1,4 @@
-# Tewe Diary (TeweRestApi)
+# Tewe Diary
 
 A production-shaped .NET 9 REST API for movies and ratings. It is a portfolio piece: the engineering decisions are the point, not feature count. `mission-critical` copies this repo's conventions, so changes here set the pattern for both.
 
@@ -13,12 +13,13 @@ A production-shaped .NET 9 REST API for movies and ratings. It is a portfolio pi
 
 ## Rules that must hold in code
 
-- Dependencies point inward. `Movies.Application` references no other project, and `Movies.Contracts` is a leaf. DTOs never reach the domain; mapping happens at the API edge (`Movies.Api/Mapping/`)
+- Dependencies point inward. `Movies.Application` references no other project, and `Movies.Contracts` is a leaf. DTOs never reach the domain; mapping happens at the API edge (`backend/src/Movies.Api/Mapping/`)
 - Dapper over Postgres. The schema is owned by FluentMigrator migrations, never by import scripts
 - Secrets and per-environment values go in `.env` (gitignored, tracked `.env.example`). Non-secret tuning goes in `appsettings.json`. Nothing is hardcoded in C#
 - Authorisation is policy-based (`Admin`, `Trusted`), with the JWT signing secret shared with Identity
 - Writes evict the output-cache tag for movies
-- Central package management (`Directory.Packages.props`)
+- Central package management (`backend/Directory.Packages.props`). The target framework lives in `backend/Directory.Build.props`, not in the `.csproj` files
+- v2 is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, beside the v1 controllers. `frontend/` is the React app and builds on its own
 
 ## This repo's stack is not a violation
 
@@ -50,7 +51,7 @@ Controllers with URL-segment versioning, FluentValidation, Refit SDK, output cac
 ```bash
 cp .env.example .env
 bash scripts/stack-up.sh
-dotnet test TeweRestApi.sln
+dotnet test backend/TeweDiary.sln
 ```
 
 CI and deployment: `_docs/ci-cd.md`. SonarCloud analysis: `.github/workflows/sonarcloud.yml` (setup in `_docs/_getting-started.md`).

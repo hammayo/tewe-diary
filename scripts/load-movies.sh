@@ -11,7 +11,7 @@
 # and elapsed time, then a summary (inserted/refreshed/skipped) and how many TMDB movies now have details.
 #
 # Usage:
-#   scripts/load-movies.sh                      # every Data/*.ndjson (all fetches so far)
+#   scripts/load-movies.sh                      # every data/*.ndjson (all fetches so far)
 #   scripts/load-movies.sh file.ndjson [more...] # only these
 #
 # Several files are staged together in one transaction, so a movie appearing in more than one file is
@@ -28,7 +28,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [ $# -gt 0 ]; then
   FILES=("$@")
 else
-  FILES=("$REPO_ROOT"/Data/*.ndjson)
+  FILES=("$REPO_ROOT"/data/*.ndjson)
 fi
 
 for f in "${FILES[@]}"; do

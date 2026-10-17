@@ -2,7 +2,7 @@
 
 A layered .NET solution. Dependencies point **inward**; the core references nothing
 outward and DTOs never leak into the domain — mapping happens at the API edge
-(`Movies.Api/Mapping/`).
+(`backend/src/Movies.Api/Mapping/`).
 
 ```
         ┌───────────────────────────────── depends on ─────────────────────────────┐
@@ -46,16 +46,16 @@ store ever justifies it (see [design-decisions.md](design-decisions.md)):
 TMDB details are read-only from the API's point of view.
 - `MovieDetailsRepository` reads them, and `MovieService` attaches them to single-movie reads.
 - `MovieRepository` joins `movie_details` for the poster on every read.
-- Also at the edge, `Movies.Api/Mapping/MovieLinkBuilder` adds each movie's HAL `self` link, built
+- Also at the edge, `backend/src/Movies.Api/Mapping/MovieLinkBuilder` adds each movie's HAL `self` link, built
   from the route with `LinkGenerator` (see [design-decisions.md](design-decisions.md#14-hateoas-self-links-only-absolute-generated-from-routes)).
-- At the edge, `Movies.Api/Mapping/TmdbUrlBuilder` turns the stored paths and keys into image and
+- At the edge, `backend/src/Movies.Api/Mapping/TmdbUrlBuilder` turns the stored paths and keys into image and
   trailer URLs, using the `Tmdb:Images` options.
 
 ## Request pipeline (Movies.Api)
 
 ```
 HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (policy) ─→
-  controller ─→ ContractMapping (DTO→domain) ─→ Service (+ FluentValidation) ─→
+  controller (v1) or Minimal API endpoint (v2, `Endpoints/V2/`) ─→ ContractMapping (DTO→domain) ─→ Service (+ FluentValidation) ─→
   Repository (Dapper) ─→ PostgreSQL
                      ▲
    ValidationMappingMiddleware turns validation failures into 400 payloads;
@@ -67,19 +67,27 @@ HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (polic
 
 | Project                 | Path                           | Responsibility                                                                               |
 |-------------------------|--------------------------------|----------------------------------------------------------------------------------------------|
-| Movies.Contracts        | `Movies.Contracts/`            | Request/response DTOs (leaf — no project dependencies)                                       |
-| Movies.Application      | `Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import |
-| Movies.Api              | `Movies.Api/`                  | Web API — controllers, contract mapping, auth, caching, Swagger, health                      |
-| Identity.Api            | `Identity.Api/`                | Issues the JWTs the Movies API validates                                                     |
-| Movies.Api.Sdk          | `Sdk/Movies.Api.Sdk/`          | Refit client SDK (references Contracts)                                                      |
-| Movies.Api.Sdk.Consumer | `Sdk/Movies.Api.Sdk.Consumer/` | Example console consumer of the SDK                                                          |
-| Movies.DbTool           | `Ops.Tools/Movies.DbTool/`     | CLI: `migrate` and `import <ndjson>`                                                         |
-| Tests                   | `Tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
+| Movies.Contracts        | `backend/src/Movies.Contracts/`            | Request/response DTOs (leaf — no project dependencies)                                       |
+| Movies.Application      | `backend/src/Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import |
+| Movies.Api              | `backend/src/Movies.Api/`                  | Web API — controllers, contract mapping, auth, caching, Swagger, health                      |
+| Identity.Api            | `backend/src/Identity.Api/`                | Issues the JWTs the Movies API validates                                                     |
+| Frontend                | `frontend/`                                | React shell (Vite + TypeScript), served by nginx. Placeholder until the frontend PRD         |
+| Movies.Api.Sdk          | `backend/sdk/Movies.Api.Sdk/`          | Refit client SDK (references Contracts)                                                      |
+| Movies.Api.Sdk.Consumer | `backend/sdk/Movies.Api.Sdk.Consumer/` | Example console consumer of the SDK                                                          |
+| Movies.DbTool           | `backend/tools/Movies.DbTool/`     | CLI: `migrate` and `import <ndjson>`                                                         |
+| Tests                   | `backend/tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
+
+The target framework, `Nullable` and `ImplicitUsings` are set once in `backend/Directory.Build.props`, and the SDK is
+pinned in `global.json`. CI reads the SDK from `global.json`; the Dockerfiles take the image tag from the
+`DOTNET_VERSION` build argument. Moving to a new .NET version means changing those three places, and
+`DotNetVersionTests` fails if one of them is missed.
+
+v2 is a set of Minimal API endpoints inside `Movies.Api` (`Endpoints/V2/`), running beside the v1 controllers on the
+same host, auth, versioning and output cache. It currently has one read endpoint to prove the wiring.
 
 Supporting folders: `scripts/` (dev/ops shell scripts + SQL/jq helpers under
-`scripts/helpers/`), `Ops.Tools/Postman/` (Postman collection + environment),
-`Data/` (generated TMDB ndjson — gitignored), `_docs/` (this documentation),
+`scripts/helpers/`), `backend/tools/Postman/` (Postman collection + environment),
+`data/` (generated TMDB ndjson — gitignored), `_docs/` (this documentation),
 `_tasks/` (working specs/plans — gitignored).
 
-The solution's virtual folders (`Sdk`, `Tests`, `Ops.Tools`, `IAM`) mirror this
-on-disk layout.
+The solution's virtual folders (`SDK`, `Tests`, `Ops.Tools`, `IAM`) group the projects under `backend/`.
