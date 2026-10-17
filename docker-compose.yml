@@ -93,7 +93,7 @@ services:
     container_name: tewe-frontend
     restart: unless-stopped
     ports:
-      - '5173:80'
+      - '5173:8080'
 
 volumes:
   pgdata:
