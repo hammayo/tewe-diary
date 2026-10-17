@@ -1,7 +1,7 @@
 # Testing
 
 ```bash
-dotnet test TeweRestApi.sln
+dotnet test backend/TeweDiary.sln
 ```
 
 ## Strategy

@@ -7,13 +7,13 @@ touched. Imports are idempotent (deduped on `tmdb_id`).
 
 ## Pipeline overview
 
-The dataset is generated, not committed (`Data/` is gitignored). The **same SQL
+The dataset is generated, not committed (`data/` is gitignored). The **same SQL
 transform** is the single source of truth — embedded in `Movies.Application` for the
 CLI path and shared with the psql ops path (see [design-decisions.md](design-decisions.md#4-the-import-transform-is-embedded-shared-with-the-ops-path)).
 
 ```
 TMDB API ──fetch-tmdb.sh (list/discover/trending, then enrich: one
-          /movie/{id}?append_to_response=credits,videos per movie)──▶ Data/tmdb-<fetch>.ndjson
+          /movie/{id}?append_to_response=credits,videos per movie)──▶ data/tmdb-<fetch>.ndjson
                                               │
                     ┌─────────────────────────┴─────────────────────────┐
                     ▼                                                   ▼
@@ -51,16 +51,16 @@ After the chosen mode writes its list, `fetch-tmdb.sh` always enriches every mov
 Test the jq step with `bash scripts/tests/test_tmdb_details_transform.sh`.
 
 ```bash
-bash scripts/fetch-tmdb.sh                 # 1. fetch movies + details into Data/tmdb-<what-was-fetched>.ndjson (needs a TMDB API key)
-bash scripts/load-movies.sh [files...]     # 2. load every Data/*.ndjson (or just the files you name) into the running db,
+bash scripts/fetch-tmdb.sh                 # 1. fetch movies + details into data/tmdb-<what-was-fetched>.ndjson (needs a TMDB API key)
+bash scripts/load-movies.sh [files...]     # 2. load every data/*.ndjson (or just the files you name) into the running db,
                                            #    showing step progress, the import summary and details coverage
 bash scripts/enrich-movies.sh [--all]      # shortcut for movies already in the db: fetch details for those missing them,
                                            #    then load (--all: refresh every one)
 bash scripts/reset-data.sh [--volume] [--reload]   # start fresh: delete every movie and rating (asks first)
 # or, via the CLI tool:
-dotnet run --project Ops.Tools/Movies.DbTool -- import Data/*.ndjson
+dotnet run --project backend/tools/Movies.DbTool -- import data/*.ndjson
 # schema migrations (same CLI):
-dotnet run --project Ops.Tools/Movies.DbTool -- migrate
+dotnet run --project backend/tools/Movies.DbTool -- migrate
 ```
 
 ## 1. Configure
@@ -99,7 +99,7 @@ any flag below still works after a preset (`classics --pages 50 --min-rating 7`)
 ### Flags (everything a preset can't say)
 
 `fetch-tmdb.sh` has four mutually exclusive modes. They all write NDJSON to
-`Data/tmdb-<what-was-fetched>.ndjson` (override with `--out PATH`). A bare run is discover mode, newest first,
+`data/tmdb-<what-was-fetched>.ndjson` (override with `--out PATH`). A bare run is discover mode, newest first,
 up to 500 pages. List and discover paginate with `--pages N` (20 movies per page); trending is fixed
 at 10. Every mode then enriches each movie with its details (see
 [Enrichment](#enrichment-details-credits-trailer)).
@@ -164,7 +164,7 @@ It can't be combined with the other modes. `scripts/enrich-movies.sh` uses it (s
 
 ### One file per fetch
 
-Each run writes `Data/tmdb-<what-was-fetched>.ndjson`, so a new pull never overwrites an earlier one:
+Each run writes `data/tmdb-<what-was-fetched>.ndjson`, so a new pull never overwrites an earlier one:
 
 | Command                                               | File                                                                                  |
 |-------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -192,11 +192,11 @@ fetches and load them together:
 
 ## 3. Import into the running db container
 
-The simplest way is the loader script, which loads **every** `Data/*.ndjson` unless you name files.
+The simplest way is the loader script, which loads **every** `data/*.ndjson` unless you name files.
 No host `psql` client is needed:
 
-    scripts/load-movies.sh                      # every Data/*.ndjson
-    scripts/load-movies.sh Data/tmdb-list-popular.ndjson /path/to/other.ndjson
+    scripts/load-movies.sh                      # every data/*.ndjson
+    scripts/load-movies.sh data/tmdb-list-popular.ndjson /path/to/other.ndjson
 
 **No duplicates.** All the files are staged together in one transaction: a movie appearing in several
 fetches is imported once (the transform keeps one row per `tmdb_id`), and movies already in the db are
@@ -214,7 +214,7 @@ It shows its progress, and on failure prints psql's error and exits 1 (nothing i
     Done in 21s.
 
 The import is one transaction, so there's no per-row count; it shows the elapsed time instead. The
-.NET path (`dotnet run --project Ops.Tools/Movies.DbTool -- import <file>`) stages lines one at a time,
+.NET path (`dotnet run --project backend/tools/Movies.DbTool -- import <file>`) stages lines one at a time,
 so it does show a count: `n/total (%) · elapsed · ETA`, updated every 250 lines.
 
 What the script does, if you ever need to do it by hand: copy the NDJSON, the transform and the
@@ -224,7 +224,7 @@ runner into the container, then run the runner with psql inside it.
     set -a; . ./.env; set +a
 
     CID=$(docker compose ps -q db)
-    docker cp Data/<fetch>.ndjson "$CID":/tmp/tmdb-movies.ndjson
+    docker cp data/<fetch>.ndjson "$CID":/tmp/tmdb-movies.ndjson
     docker cp scripts/helpers/import-transform.sql "$CID":/tmp/import-transform.sql
     docker cp scripts/helpers/import-movies.sql    "$CID":/tmp/import-movies.sql
 
@@ -233,7 +233,7 @@ runner into the container, then run the runner with psql inside it.
       -f /tmp/import-movies.sql
 
 The schema is owned by the FluentMigrator migrations. `Movies.Api` applies them on boot locally;
-otherwise run `dotnet run --project Ops.Tools/Movies.DbTool -- migrate` before importing.
+otherwise run `dotnet run --project backend/tools/Movies.DbTool -- migrate` before importing.
 
 Re-running fetch + import inserts newly seen movies and **refreshes** existing ones in place, matched
 by `tmdb_id`, so ids and ratings are kept. The `ratings` table is never modified.
@@ -276,8 +276,8 @@ prints a new line every 30s (scripts) or every 10% (DbTool).
       Imported  2026-09-22 13:29 UTC
 
       Scripts (in order, all safe to re-run):
-        1. scripts/fetch-tmdb.sh [options]     fetch movies + details -> Data/tmdb-<what-was-fetched>.ndjson
-        2. scripts/load-movies.sh [files...]   load every Data/*.ndjson (or just the files you name)
+        1. scripts/fetch-tmdb.sh [options]     fetch movies + details -> data/tmdb-<what-was-fetched>.ndjson
+        2. scripts/load-movies.sh [files...]   load every data/*.ndjson (or just the files you name)
         Or, for movies already in the db (fetches, then loads):
            scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)
         Start over (deletes every movie and rating, asks first):

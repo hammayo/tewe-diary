@@ -40,7 +40,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
-      - run: dotnet test TeweRestApi.sln --configuration Release
+      - run: dotnet test backend/TeweDiary.sln --configuration Release
 
   deploy:
     needs: test
@@ -68,8 +68,8 @@ jobs:
           az acr login --name "${{ vars.ACR_NAME }}"
           MOVIES_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/movies-api:${GITHUB_SHA}"
           IDENTITY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/identity-api:${GITHUB_SHA}"
-          docker build -t "$MOVIES_IMAGE" -f Dockerfile .
-          docker build -t "$IDENTITY_IMAGE" -f Dockerfile.identity .
+          docker build -t "$MOVIES_IMAGE" -f backend/Dockerfile .
+          docker build -t "$IDENTITY_IMAGE" -f backend/Dockerfile.identity .
           docker push "$MOVIES_IMAGE"
           docker push "$IDENTITY_IMAGE"
           echo "MOVIES_IMAGE=$MOVIES_IMAGE" >> "$GITHUB_ENV"
@@ -93,7 +93,7 @@ jobs:
 
           CS="$(az keyvault secret show --vault-name "${{ vars.KEY_VAULT_NAME }}" \
                 --name "${{ vars.MIGRATION_CONNECTION_SECRET }}" --query value -o tsv)"
-          Database__ConnectionString="$CS" dotnet run --project Ops.Tools/Movies.DbTool -c Release -- migrate
+          Database__ConnectionString="$CS" dotnet run --project backend/tools/Movies.DbTool -c Release -- migrate
 
       - name: Deploy images to production
         run: |

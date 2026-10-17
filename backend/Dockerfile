@@ -4,16 +4,16 @@ WORKDIR /src
 
 # Restore layer: copy only what restore needs (with central package management) so this caches
 # unless dependencies change.
-COPY Directory.Packages.props ./
-COPY Movies.Api/Movies.Api.csproj Movies.Api/
-COPY Movies.Application/Movies.Application.csproj Movies.Application/
-COPY Movies.Contracts/Movies.Contracts.csproj Movies.Contracts/
-RUN dotnet restore Movies.Api/Movies.Api.csproj
+COPY backend/Directory.Packages.props backend/
+COPY backend/src/Movies.Api/Movies.Api.csproj backend/src/Movies.Api/
+COPY backend/src/Movies.Application/Movies.Application.csproj backend/src/Movies.Application/
+COPY backend/src/Movies.Contracts/Movies.Contracts.csproj backend/src/Movies.Contracts/
+RUN dotnet restore backend/src/Movies.Api/Movies.Api.csproj
 
 # Build + publish. `scripts/import-transform.sql` (embedded by Movies.Application) is present after
 # this copy.
 COPY . .
-RUN dotnet publish Movies.Api/Movies.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish backend/src/Movies.Api/Movies.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app

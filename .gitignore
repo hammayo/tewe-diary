@@ -11,7 +11,7 @@ _tasks/
 .ai/
 
 ## Generated data output
-Data/*.ndjson
+data/*.ndjson
 
 ## .NET build output
 [Bb]in/
@@ -49,8 +49,8 @@ bld/
 
 ## JetBrains Rider
 .idea/*
-.idea/.idea.TeweRestApi/*
-.idea/.idea.TeweRestApi/.idea/*
+.idea/.idea.TeweDiary/*
+.idea/.idea.TeweDiary/.idea/*
 
 *.sln.iml
 _ReSharper*/

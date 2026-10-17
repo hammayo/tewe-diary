@@ -27,7 +27,7 @@ services:
   identity-api:
     build:
       context: .
-      dockerfile: Dockerfile.identity
+      dockerfile: backend/Dockerfile.identity
     container_name: tewe-identity-api
     restart: unless-stopped
     ports:
@@ -50,7 +50,7 @@ services:
   movies-api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
     container_name: tewe-movies-api
     restart: unless-stopped
     depends_on:

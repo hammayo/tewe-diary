@@ -1,15 +1,15 @@
 # Identity.Api container image for Azure App Service (Web App for Containers).
-# Build from the repo root: `docker build -f Dockerfile.identity .`
+# Build from the repo root: `docker build -f backend/Dockerfile.identity .`
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Restore layer (central package management). Identity.Api has no project references.
-COPY Directory.Packages.props ./
-COPY Identity.Api/Identity.Api.csproj Identity.Api/
-RUN dotnet restore Identity.Api/Identity.Api.csproj
+COPY backend/Directory.Packages.props backend/
+COPY backend/src/Identity.Api/Identity.Api.csproj backend/src/Identity.Api/
+RUN dotnet restore backend/src/Identity.Api/Identity.Api.csproj
 
 COPY . .
-RUN dotnet publish Identity.Api/Identity.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish backend/src/Identity.Api/Identity.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app

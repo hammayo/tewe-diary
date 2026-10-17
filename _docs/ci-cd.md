@@ -12,7 +12,7 @@ step-by-step [Azure deployment runbook](azure-deployment.md).
 build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate (DDL role) ─→ deploy both
 ```
 
-- **Build + test** run against `TeweRestApi.sln`.
+- **Build + test** run against `backend/TeweDiary.sln`.
 - **Images** are built for both APIs and pushed to Azure Container Registry.
 - **Migrate** applies FluentMigrator migrations **before** deploy, using a
   least-privilege **DDL role** (separate from the app's runtime role).
@@ -40,7 +40,7 @@ Credentials are split by privilege:
 `.github/workflows/import.yml` fetches from TMDB and imports via the CLI:
 
 ```
-scripts/fetch-tmdb.sh  ─→  Data/tmdb-<fetch>.ndjson  ─→  dotnet run --project Ops.Tools/Movies.DbTool -- import Data/*.ndjson
+scripts/fetch-tmdb.sh  ─→  data/tmdb-<fetch>.ndjson  ─→  dotnet run --project backend/tools/Movies.DbTool -- import data/*.ndjson
 ```
 
 See the [TMDB import runbook](tmdb-import.md) for the full data path.

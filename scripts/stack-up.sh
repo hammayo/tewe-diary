@@ -73,7 +73,7 @@ else
 fi
 
 printf '\n  Scripts (in order, all safe to re-run):\n'
-printf '    1. scripts/fetch-tmdb.sh [options]     one file per fetch -> Data/tmdb-<what-was-fetched>.ndjson\n'
+printf '    1. scripts/fetch-tmdb.sh [options]     one file per fetch -> data/tmdb-<what-was-fetched>.ndjson\n'
 printf '         (no options) or newest [pages]      newest releases            -> tmdb-newest.ndjson\n'
 printf '         classics [minVotes]                 highest rated, 1000+ votes -> tmdb-classics.ndjson\n'
 printf '         year 1994 [genre]                   one year, optional genres  -> tmdb-year-1994.ndjson\n'
@@ -81,7 +81,7 @@ printf '         genre Horror / language hi          by genre or language\n'
 printf '         popular | top-rated | now-playing   TMDB curated lists\n'
 printf '         trending [day|week]                 trending now (top 10)\n'
 printf '         ids 680 550                         exact TMDB ids (--help for all)\n'
-printf '    2. scripts/load-movies.sh [files...]   load every Data/*.ndjson (or just the files you name);\n'
+printf '    2. scripts/load-movies.sh [files...]   load every data/*.ndjson (or just the files you name);\n'
 printf '                                           duplicates across files are collapsed on tmdb_id\n'
 printf '    Or, for movies already in the db (fetches, then loads):\n'
 printf '       scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)\n'
