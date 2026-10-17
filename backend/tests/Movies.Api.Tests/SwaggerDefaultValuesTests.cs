@@ -138,4 +138,55 @@ public class SwaggerDefaultValuesTests
         // Assert
         Assert.Equal(5, Assert.IsType<OpenApiInteger>(operation.Parameters[0].Schema.Default).Value);
     }
+
+    [Fact]
+    public void a_dbnull_default_value_is_ignored()
+    {
+        // Arrange
+        var metadata = new EmptyModelMetadataProvider().GetMetadataForType(typeof(string));
+        var description = Description();
+        description.ParameterDescriptions.Add(new ApiParameterDescription
+        {
+            Name = "idOrSlug",
+            ModelMetadata = metadata,
+            DefaultValue = DBNull.Value
+        });
+        var operation = new OpenApiOperation
+        {
+            Parameters = [new OpenApiParameter { Name = "idOrSlug", Schema = new OpenApiSchema() }]
+        };
+
+        // Act
+        var exception = Record.Exception(() => new SwaggerDefaultValues().Apply(operation, ContextFor(description)));
+
+        // Assert
+        Assert.Null(exception);
+        Assert.Null(operation.Parameters[0].Schema.Default);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(1)]
+    public void a_parameter_without_model_metadata_is_left_without_a_default(int? defaultValue)
+    {
+        // Arrange
+        var description = Description();
+        description.ParameterDescriptions.Add(new ApiParameterDescription
+        {
+            Name = "idOrSlug",
+            ModelMetadata = null!,
+            DefaultValue = defaultValue
+        });
+        var operation = new OpenApiOperation
+        {
+            Parameters = [new OpenApiParameter { Name = "idOrSlug", Schema = new OpenApiSchema() }]
+        };
+
+        // Act
+        var exception = Record.Exception(() => new SwaggerDefaultValues().Apply(operation, ContextFor(description)));
+
+        // Assert
+        Assert.Null(exception);
+        Assert.Null(operation.Parameters[0].Schema.Default);
+    }
 }

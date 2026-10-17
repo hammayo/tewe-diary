@@ -31,9 +31,7 @@ public static class MoviesV2Endpoints
     {
         var userId = context.GetUserId();
 
-        var movie = Guid.TryParse(idOrSlug, out var id)
-            ? await movieService.GetByIdAsync(id, userId, token)
-            : await movieService.GetBySlugAsync(idOrSlug, userId, token);
+        var movie = await movieService.GetByIdOrSlugAsync(idOrSlug, userId, token);
 
         return movie is null ? Results.NotFound() : Results.Ok(movie.MapToResponse(urls, null));
     }

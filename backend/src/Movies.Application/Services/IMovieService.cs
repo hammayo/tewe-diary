@@ -10,6 +10,9 @@ public interface IMovieService
     
     Task<Movie?> GetBySlugAsync(string slug, Guid? userid = default, CancellationToken token = default);
     
+    // Resolves a GUID as an id and anything else as a slug, so v1 and v2 share one lookup rule.
+    Task<Movie?> GetByIdOrSlugAsync(string idOrSlug, Guid? userid = default, CancellationToken token = default);
+    
     Task<IEnumerable<Movie>> GetAllAsync(GetAllMoviesOptions options, CancellationToken token = default);
     
     Task<Movie?> UpdateAsync(Movie movie, Guid? userid = default, CancellationToken token = default);

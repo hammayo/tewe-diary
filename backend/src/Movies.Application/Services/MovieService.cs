@@ -39,6 +39,11 @@ public class MovieService : IMovieService
         return await WithDetailsAsync(movie, token);
     }
 
+    public Task<Movie?> GetByIdOrSlugAsync(string idOrSlug, Guid? userid = default, CancellationToken token = default) =>
+        Guid.TryParse(idOrSlug, out var id)
+            ? GetByIdAsync(id, userid, token)
+            : GetBySlugAsync(idOrSlug, userid, token);
+
     public async Task<IEnumerable<Movie>> GetAllAsync(GetAllMoviesOptions options, CancellationToken token = default)
     {
         await _optionsValidator.ValidateAndThrowAsync(options, token);
