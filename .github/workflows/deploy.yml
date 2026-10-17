@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v6
         with:
-          global-json-file: backend/global.json
+          global-json-file: global.json
       # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
       - run: dotnet test backend/TeweDiary.sln --configuration Release
 
@@ -75,7 +75,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          global-json-file: backend/global.json
+          global-json-file: global.json
 
       - name: Migrate database
         env:

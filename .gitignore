@@ -48,6 +48,7 @@ bld/
 *.rsuser
 
 ## JetBrains Rider
+backend/.idea/
 .idea/*
 .idea/.idea.TeweDiary/*
 .idea/.idea.TeweDiary/.idea/*

@@ -78,7 +78,7 @@ HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (polic
 | Tests                   | `backend/tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
 
 The target framework, `Nullable` and `ImplicitUsings` are set once in `backend/Directory.Build.props`, and the SDK is
-pinned in `backend/global.json`. CI reads the SDK from `global.json`; the Dockerfiles take the image tag from the
+pinned in `global.json`. CI reads the SDK from `global.json`; the Dockerfiles take the image tag from the
 `DOTNET_VERSION` build argument. Moving to a new .NET version means changing those three places.
 
 v2 is a set of Minimal API endpoints inside `Movies.Api` (`Endpoints/V2/`), running beside the v1 controllers on the

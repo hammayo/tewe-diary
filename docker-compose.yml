@@ -89,7 +89,7 @@ services:
     build:
       context: frontend
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-https://localhost:7001}
     container_name: tewe-frontend
     restart: unless-stopped
     ports:

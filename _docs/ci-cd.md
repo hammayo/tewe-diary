@@ -12,7 +12,7 @@ step-by-step [Azure deployment runbook](azure-deployment.md).
 build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate (DDL role) ─→ deploy both
 ```
 
-- **Build + test** run against `backend/TeweDiary.sln`. Every workflow reads the SDK version from `backend/global.json`.
+- **Build + test** run against `backend/TeweDiary.sln`. Every workflow reads the SDK version from `global.json`.
 - **Path filters**: `deploy.yml` and `sonarcloud.yml` ignore `frontend/**`, and `frontend.yml` runs only for
   `frontend/**`, so a backend change does not build the React app and the other way round.
 - **Images** are built for both APIs and pushed to Azure Container Registry.

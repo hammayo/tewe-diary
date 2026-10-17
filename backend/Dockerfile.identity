@@ -5,7 +5,8 @@ FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
 
 # Restore layer (central package management). Identity.Api has no project references.
-COPY backend/Directory.Build.props backend/Directory.Packages.props backend/global.json backend/
+COPY global.json ./
+COPY backend/Directory.Build.props backend/Directory.Packages.props backend/
 COPY backend/src/Identity.Api/Identity.Api.csproj backend/src/Identity.Api/
 RUN dotnet restore backend/src/Identity.Api/Identity.Api.csproj
 

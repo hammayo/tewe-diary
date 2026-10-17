@@ -5,7 +5,8 @@ WORKDIR /src
 
 # Restore layer: copy only what restore needs (with central package management) so this caches
 # unless dependencies change.
-COPY backend/Directory.Build.props backend/Directory.Packages.props backend/global.json backend/
+COPY global.json ./
+COPY backend/Directory.Build.props backend/Directory.Packages.props backend/
 COPY backend/src/Movies.Api/Movies.Api.csproj backend/src/Movies.Api/
 COPY backend/src/Movies.Application/Movies.Application.csproj backend/src/Movies.Application/
 COPY backend/src/Movies.Contracts/Movies.Contracts.csproj backend/src/Movies.Contracts/
