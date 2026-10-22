@@ -19,6 +19,7 @@ them. Lightweight ADR style: **decision → rationale → revisit when**.
 12. [Getting to $0 (free-tier options and limitations)](#12-getting-to-0-free-tier-options-and-limitations)
 13. [Deployment gotchas fixed (ACR pull, DB grants, KV propagation)](#13-deployment-gotchas-fixed-acr-pull-db-grants-kv-propagation)
 14. [HATEOAS: self links only, absolute, generated from routes](#14-hateoas-self-links-only-absolute-generated-from-routes)
+15. [v2 as Minimal APIs inside Movies.Api, and one place for the .NET version](#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)
 
 ## 1. One `Movies.Application` project, not separate Domain/Application/Infrastructure
 
@@ -94,7 +95,7 @@ by tying eviction to writes rather than short TTL guesses.
 **Decision.** Routes are `/api/v{version}` via `Asp.Versioning`, defaulting to v1, with
 versions reported in a response header and one Swagger doc per version.
 
-**Rationale.** Lets a v2 surface (planned as Minimal APIs, in a feature branch) run beside
+**Rationale.** Lets the v2 surface (Minimal APIs, see [decision 15](#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)) run beside
 v1 without breaking existing clients.
 
 ## 9. Integration tests hit a real Postgres
@@ -241,3 +242,19 @@ included, if routes ever change.
 on the caller's claims, and advertising them unconditionally would be misleading. Both are easy to add:
 `PagedResponse<T>` would extend `HalResponse` for page links, and `MovieLinkBuilder` would gain the
 action links.
+
+## 15. v2 as Minimal APIs inside Movies.Api, and one place for the .NET version
+
+**Decision.** The v2 surface is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, mapped beside the v1
+controllers on the same host. It shares auth, versioning, output caching, validation and DI, and v1 and v2 call the
+same service methods (for example `IMovieService.GetByIdOrSlugAsync`). The .NET version is set in
+`backend/Directory.Build.props`, pinned in the root `global.json` and passed to the Dockerfiles as
+`DOTNET_VERSION`; `DotNetVersionTests` fails if they disagree. The React app lives in `frontend/`, beside
+`backend/`, and builds on its own.
+
+**Rationale.** A separate v2 project would duplicate the startup and cross-cutting code for no gain while both
+versions deploy together. Docker cannot read the props file or `global.json`, so the test is the cheapest link between
+the three places.
+
+**Revisit when** v2 has to deploy or scale separately (then split it into its own host), or when the framework version
+is bumped (change the three places and let the test confirm it).

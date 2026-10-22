@@ -13,6 +13,8 @@ dotnet test backend/TeweDiary.sln
   the data layer is exercised, not mocked. **Docker must be running.**
 - **Identity tests** (`Identity.Api.Tests`) verify token issuance end to end using a
   `WebApplicationFactory`.
+- **Guard tests** keep cross-file facts in step: `DotNetVersionTests` fails when the .NET version in
+  `Directory.Build.props`, `global.json` and the Dockerfiles disagree.
 - Shared helpers (`Movies.Tests.Shared`) provide the Postgres fixture, deterministic
   `Bogus` test data, and JWT helpers.
 

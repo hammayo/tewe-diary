@@ -6,6 +6,9 @@ advertises supported versions in the `api-supported-versions` response header
 
 Interactive docs: Swagger UI at `/swagger` (Development only), one document per API version.
 
+v2 is a skeleton: `GET /api/v2/movies/{idOrSlug}` returns the same response as v1. The rest of the v2 surface is not
+designed yet (see [decision 15](design-decisions.md#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)).
+
 ## Endpoints
 
 | Method   | Route                         | Auth                  | Notes                                   |

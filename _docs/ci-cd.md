@@ -20,6 +20,8 @@ build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate
   least-privilege **DDL role** (separate from the app's runtime role).
 - **Deploy** ships both APIs straight to their Azure Web Apps (Basic B1 plan — no slots).
 
+- **Frontend** (`frontend.yml`) runs `npm ci --ignore-scripts` and `npm run build` for `frontend/**` changes only.
+
 ## Secrets & configuration
 
 - Secrets come from **Azure Key Vault** via managed identity (`KeyVault__Uri`, Azure-only).
