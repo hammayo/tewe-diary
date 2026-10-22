@@ -4,8 +4,11 @@ public static class MovieEndpointExtensions
 {
     public static IEndpointRouteBuilder MapMovieEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGetMovie();
         app.MapGetAllMovies();
+        app.MapGetMovie();
+        app.MapCreateMovie();
+        app.MapUpdateMovie();
+        app.MapDeleteMovie();
 
         return app;
     }

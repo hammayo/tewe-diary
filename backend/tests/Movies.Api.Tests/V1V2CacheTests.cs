@@ -34,4 +34,24 @@ public class V1V2CacheTests
         Assert.Equal(4, signedIn!.UserRating);
         Assert.Null(anonymous!.UserRating);
     }
+
+    [Fact]
+    public async Task a_movie_created_through_v2_is_listed_by_v1_and_one_deleted_through_v1_is_gone_from_v2()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var trusted = _fx.Factory.CreateAuthenticatedClient(trusted: true);
+        var admin = _fx.Factory.CreateAuthenticatedClient(admin: true);
+
+        // Act
+        var created = (await (await trusted.PostAsync("/api/v2/movies", TestData.CreateMovieRequest.Generate().AsJsonContent()))
+            .ReadJsonAsync<MovieResponse>())!;
+        var listedByV1 = await (await trusted.GetAsync("/api/v1/movies")).ReadJsonAsync<MoviesResponse>();
+        await admin.DeleteAsync($"/api/v1/movies/{created.Id}");
+        var v2AfterDelete = await trusted.GetAsync($"/api/v2/movies/{created.Id}");
+
+        // Assert
+        Assert.Equal(created.Id, listedByV1!.Items.Single().Id);
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, v2AfterDelete.StatusCode);
+    }
 }

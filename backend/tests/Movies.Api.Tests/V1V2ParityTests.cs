@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace Movies.Api.Tests;
@@ -38,6 +39,37 @@ public class V1V2ParityTests
         // Act
         var v1 = await Describe(await client.GetAsync("/api/v1/movies?page=abc"));
         var v2 = await Describe(await client.GetAsync("/api/v2/movies?page=abc"));
+
+        // Assert
+        Assert.Equal(v1, v2);
+    }
+
+    [Theory]
+    [InlineData("POST", "movies", "none", """{"title":"x","yearOfRelease":2000,"genres":["a"]}""")]   // not signed in
+    [InlineData("POST", "movies", "trusted", "{ this is not json")]                                  // malformed body
+    [InlineData("POST", "movies", "trusted", """{"title":"","yearOfRelease":2000,"genres":["a"]}""")] // validation
+    [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000", "trusted", """{"title":"x","yearOfRelease":2000,"genres":["a"]}""")] // missing
+    [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000", "trusted", null)]           // wrong role
+    [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000", "admin", null)]             // missing
+    public async Task a_write_gets_the_same_answer_in_both_versions(string method, string path, string caller, string? body)
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var client = caller switch
+        {
+            "trusted" => _fx.Factory.CreateAuthenticatedClient(trusted: true),
+            "admin" => _fx.Factory.CreateAuthenticatedClient(admin: true),
+            _ => _fx.Factory.CreateAnonymousClient()
+        };
+
+        HttpRequestMessage Build(string version) => new(new HttpMethod(method), $"/api/{version}/{path}")
+        {
+            Content = body is null ? null : new StringContent(body, Encoding.UTF8, "application/json")
+        };
+
+        // Act
+        var v1 = await Describe(await client.SendAsync(Build("v1")));
+        var v2 = await Describe(await client.SendAsync(Build("v2")));
 
         // Assert
         Assert.Equal(v1, v2);
