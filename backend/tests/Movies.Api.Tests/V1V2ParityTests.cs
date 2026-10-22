@@ -56,8 +56,6 @@ public class V1V2ParityTests
     [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "user", "{ not json")]         // malformed body
     [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "user", null)]             // nothing to remove
     [InlineData("GET", "ratings/me", "none", null)]                                                        // not signed in
-    [InlineData("POST", "admin/cache/evict", "none", null)]                                                // no API key
-    [InlineData("POST", "admin/cache/evict", "wrongkey", null)]                                            // wrong API key
     public async Task a_write_gets_the_same_answer_in_both_versions(string method, string path, string caller, string? body)
     {
         // Arrange
@@ -67,7 +65,6 @@ public class V1V2ParityTests
             "trusted" => _fx.Factory.CreateAuthenticatedClient(trusted: true),
             "admin" => _fx.Factory.CreateAuthenticatedClient(admin: true),
             "user" => _fx.Factory.CreateAuthenticatedClient(Guid.NewGuid()),
-            "wrongkey" => _fx.Factory.CreateApiKeyClient("not-the-key"),
             _ => _fx.Factory.CreateAnonymousClient()
         };
 

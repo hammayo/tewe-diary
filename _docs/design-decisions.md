@@ -252,9 +252,17 @@ same service methods (for example `IMovieService.GetByIdOrSlugAsync`). The .NET 
 `DOTNET_VERSION`; `DotNetVersionTests` fails if they disagree. The React app lives in `frontend/`, beside
 `backend/`, and builds on its own.
 
+v2 mirrors eight of the nine v1 endpoints (not the admin cache evict, which only the deploy pipeline calls, on v1) with the same request and response shapes, in the layout of the
+course's Minimal API chapter: one static class per endpoint, area aggregators, and a single `ApiVersionSet` built in
+`MapApiEndpoints()`. Errors match v1 on purpose. `[ApiController]` gives v1 a `ProblemDetails` body on `404` and on
+binding failures, so v2 returns the same through `V2Problems.NotFound()` and `BadRequestExceptionHandler`
+(`RouteHandlerOptions.ThrowOnBadRequest`). Route
+names carry the version (`GetMovieV2`), and `MovieLinkBuilder` builds `self` links for whichever version is served.
+`V1V2ParityTests` sends the same request to both versions and compares the answers.
+
 **Rationale.** A separate v2 project would duplicate the startup and cross-cutting code for no gain while both
 versions deploy together. Docker cannot read the props file or `global.json`, so the test is the cheapest link between
 the three places.
 
-**Revisit when** v2 has to deploy or scale separately (then split it into its own host), or when the framework version
+**Revisit when** the parked browse design (cards, genre filter, search) makes v2 differ from v1, or v2 has to deploy or scale separately (then split it into its own host), or when the framework version
 is bumped (change the three places and let the test confirm it).

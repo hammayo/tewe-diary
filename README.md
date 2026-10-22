@@ -82,9 +82,10 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Minimal API v2** (skeleton in place: one read endpoint in `Endpoints/V2/`). A parallel `v2` surface built with .NET Minimal APIs, developed
-  in a feature branch and running beside the v1 controllers. URL-segment versioning
-  already supports this, and the SDK will gain a v2 client alongside it.
+- **Minimal API v2** (built: eight of the nine v1 endpoints in `Endpoints/V2/`, all but the admin cache evict, same shapes and rules, see
+  [the PRD](_docs/prds/_03-v2-browse-api-prd.md)). A parallel `v2` surface built with .NET Minimal APIs, running beside
+  the v1 controllers on the same host. A richer v2 (genre filter, search, card payloads) is designed and parked, and the
+  SDK will gain a v2 client alongside it.
 - **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:

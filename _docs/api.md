@@ -1,13 +1,16 @@
-# API reference (v1)
+# API reference (v1 and v2)
 
-Base path is versioned via URL segment: `/api/v{version}` (v1 today). The API
+Base path is versioned via URL segment: `/api/v{version}` (v1 and v2). The API
 advertises supported versions in the `api-supported-versions` response header
 (`ReportApiVersions = true`), and defaults to `v1` when unspecified.
 
 Interactive docs: Swagger UI at `/swagger` (Development only), one document per API version.
 
-v2 is a skeleton: `GET /api/v2/movies/{idOrSlug}` returns the same response as v1. The rest of the v2 surface is not
-designed yet (see [decision 15](design-decisions.md#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)).
+v2 is the same API built as Minimal APIs (see [decision 15](design-decisions.md#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)).
+**Every route below except the admin cache evict (and the Identity and health routes) also exists under `/api/v2`, with the same method, authorisation, request and response shapes,
+caching and errors.** The only difference a client can see is the version in `Location` and in the `self` links. The
+Swagger UI has a definition per version; the version badge next to the title is the one to check.
+A richer v2 (cards, genre filter, search) is designed and parked, not built (see `_docs/prds/_03-v2-browse-api-prd.md`).
 
 ## Endpoints
 
@@ -21,7 +24,7 @@ designed yet (see [decision 15](design-decisions.md#15-v2-as-minimal-apis-inside
 | `PUT`    | `/api/v1/movies/{id}/ratings` | Authenticated         | Rate a movie                            |
 | `DELETE` | `/api/v1/movies/{id}/ratings` | Authenticated         | Remove own rating                       |
 | `GET`    | `/api/v1/ratings/me`          | Authenticated         | Caller's ratings                        |
-| `POST`   | `/api/v1/admin/cache/evict`   | API key (`x-api-key`) | Evict the movie cache tag               |
+| `POST`   | `/api/v1/admin/cache/evict`   | API key (`x-api-key`) | Evict the movie cache tag (v1 only)     |
 | `POST`   | `/token` *(Identity.Api)*     | —                     | Issue a JWT                             |
 | `GET`    | `/_health`                    | —                     | Liveness/readiness (DB check)           |
 

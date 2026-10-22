@@ -2,21 +2,22 @@ using System.Text.Json;
 
 namespace Movies.Api.Tests;
 
-// The Swagger UI offers one document per API version. Both must describe the same nine operations,
-// and v2 must be as well labelled as the controllers behind v1.
+// The Swagger UI offers one document per API version. v2 describes every v1 operation except the admin cache
+// evict (a machine call for the deploy pipeline, so v1 only), and is as well labelled as the controllers behind v1.
 [Collection("api")]
 public class SwaggerV2Tests
 {
     private static readonly string[] HttpMethods = ["get", "post", "put", "delete"];
+    private static readonly (string Method, string Path) V1OnlyOperation = ("post", "/api/v{version}/admin/cache/evict");
 
     private readonly ApiFixture _fx;
 
     public SwaggerV2Tests(ApiFixture fx) => _fx = fx;
 
     [Theory]
-    [InlineData("1.0")]
-    [InlineData("2.0")]
-    public async Task each_version_has_its_own_document_with_nine_operations_and_the_bearer_scheme(string version)
+    [InlineData("1.0", 9)]
+    [InlineData("2.0", 8)]
+    public async Task each_version_has_its_own_document_with_its_operations_and_the_bearer_scheme(string version, int expected)
     {
         // Arrange
         var document = await GetDocumentAsync(version);
@@ -27,7 +28,7 @@ public class SwaggerV2Tests
 
         // Assert
         Assert.Equal(version, document.GetProperty("info").GetProperty("version").GetString());
-        Assert.Equal(9, operations.Count);
+        Assert.Equal(expected, operations.Count);
         Assert.True(schemes.TryGetProperty("Bearer", out _));
     }
 
@@ -54,7 +55,7 @@ public class SwaggerV2Tests
         var ids = Operations(document).Select(o => o.Operation.GetProperty("operationId").GetString()).ToList();
 
         // Assert
-        Assert.Equal(9, ids.Distinct().Count());
+        Assert.Equal(8, ids.Distinct().Count());
         Assert.DoesNotContain(null, ids);
     }
 
@@ -66,11 +67,13 @@ public class SwaggerV2Tests
         var v2 = Operations(await GetDocumentAsync("2.0")).ToDictionary(o => (o.Method, o.Path), o => Tags(o.Operation));
 
         // Act
-        var onlyInOne = v1.Keys.Except(v2.Keys).Concat(v2.Keys.Except(v1.Keys)).ToList();
+        var onlyInV1 = v1.Keys.Except(v2.Keys).ToList();
+        var onlyInV2 = v2.Keys.Except(v1.Keys).ToList();
 
         // Assert
-        Assert.Empty(onlyInOne);
-        foreach (var key in v1.Keys)
+        Assert.Equal(new[] { V1OnlyOperation }, onlyInV1);
+        Assert.Empty(onlyInV2);
+        foreach (var key in v2.Keys)
         {
             Assert.Equal(v1[key], v2[key]);
         }
@@ -84,7 +87,7 @@ public class SwaggerV2Tests
         var v2 = Operations(await GetDocumentAsync("2.0")).ToDictionary(o => (o.Method, o.Path), o => Statuses(o.Operation));
 
         // Act
-        var missing = v1.Where(o => !o.Value.IsSubsetOf(v2[o.Key])).Select(o => o.Key).ToList();
+        var missing = v1.Where(o => v2.ContainsKey(o.Key) && !o.Value.IsSubsetOf(v2[o.Key])).Select(o => o.Key).ToList();
 
         // Assert
         Assert.Empty(missing);

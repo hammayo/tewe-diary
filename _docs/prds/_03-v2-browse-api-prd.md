@@ -2,7 +2,7 @@
 
 |             |                                                                                                                      |
 |-------------|----------------------------------------------------------------------------------------------------------------------|
-| **Status**  | Draft — 2026-10-22. Scope is the v1 parity port. The browse design is **Parked** (see §9)                            |
+| **Status**  | Built, in final review — 2026-10-22. Scope is the v1 parity port. The browse design is **Parked** (see §9)                            |
 | **Owner**   | Hammy Babar                                                                                                          |
 | **Branch**  | `feature/roadmap-minimal-api-v2`                                                                                     |
 | **Doc set** | **PRD (this)** → SDD `_tasks/03-v2-browse-api-spec.md` → plan `_tasks/03-v2-browse-api-plan.md`                      |
@@ -18,7 +18,7 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 
 ## 2. Goals
 
-1. Every v1 endpoint has a v2 twin under `/api/v2`, with the **same request and response shapes** and the same behaviour.
+1. Every v1 endpoint except the admin cache evict has a v2 twin under `/api/v2` (eight of nine), with the **same request and response shapes** and the same behaviour.
 2. v2 follows the reference layout: one class per endpoint, area aggregators, one shared `ApiVersionSet`.
 3. Swagger shows both versions, each with its own operations and Bearer authorisation works on both.
 4. v1 is not changed (NFR-1).
@@ -28,6 +28,7 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 - Any difference between v1 and v2 in shapes, routes (other than the version segment), policies or caching.
 - The browse design in §9: cards, detail shape, genre filter, search, ranking data, home, similar, people.
 - A v2 rate-limit, CORS, compression or cache policy. v2 reuses v1's.
+- A v2 admin cache evict (FR-9): only the deploy pipeline calls it, and it keeps using v1.
 - A v2 SDK client, and the frontend (it is built on v1, see `_04-react-frontend-prd.md`).
 - Migrations, new packages or new configuration keys.
 
@@ -43,7 +44,7 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 
 | Id   | Decision                                                                                                                                                                                                  |
 |------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| D1   | **Layout follows the reference.** `Movies.Api/Endpoints/V2/` holds one static class per endpoint (`CreateMovieEndpoint`, `GetMovieEndpoint` and so on), grouped under `Movies/`, `Ratings/` and `Admin/`. |
+| D1   | **Layout follows the reference.** `Movies.Api/Endpoints/V2/` holds one static class per endpoint (`CreateMovieEndpoint`, `GetMovieEndpoint` and so on), grouped under `Movies/` and `Ratings/`. |
 | D2   | **One shared `ApiVersionSet`** (versions 1.0 and 2.0) replaces the skeleton's local set. v2 endpoints declare `HasApiVersion(2.0)`. v1 controllers are untouched.                                          |
 | D3   | **Same shapes.** v2 reuses the v1 request and response types in `Movies.Contracts`. No v2-only DTOs, so nothing new is mapped.                                                                           |
 | D4   | **Same policies and cache.** Same `Trusted`, `Admin` and authenticated requirements, the `MovieCache` policy on the two reads, and eviction of the `movies` tag on every write.                           |
@@ -57,7 +58,7 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 
 | Id     | Requirement                      | Acceptance                                                                                                                                                                       | Status |
 |--------|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| FR-1   | Shared version set and layout    | One `ApiVersionSet` (1.0 and 2.0) and aggregators `MapMovieEndpoints`, `MapRatingEndpoints`, `MapAdminEndpoints` behind one `MapApiEndpoints`. The skeleton is split into its own class | Todo   |
+| FR-1   | Shared version set and layout    | One `ApiVersionSet` (1.0 and 2.0) and aggregators `MapMovieEndpoints` and `MapRatingEndpoints` behind one `MapApiEndpoints`. The skeleton is split into its own class | Todo   |
 | FR-2   | Create movie                     | `POST /api/v2/movies` needs `Trusted`. Returns `201` with `Location` and the movie, `400` with the validation body on bad input, `401` and `403` as in v1                         | Todo   |
 | FR-3   | Get movie                        | `GET /api/v2/movies/{idOrSlug}` is anonymous and cached. A GUID looks up by id, anything else by slug. `404` when missing. `userRating` is filled for a signed-in caller          | Todo   |
 | FR-4   | List movies                      | `GET /api/v2/movies` with the v1 filters, sorting and paging. Anonymous and cached. Items carry the same `self` link, absolute and pointing at the v2 URL (the skeleton passes no link builder today). A malformed query (`?page=abc`) gets v1's `400` body | Todo   |
@@ -65,8 +66,8 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 | FR-6   | Delete movie                     | `DELETE /api/v2/movies/{id}` needs `Admin`. `200` or `404` as in v1                                                                                                              | Todo   |
 | FR-7   | Rate and un-rate                 | `PUT` and `DELETE /api/v2/movies/{id}/ratings` need a JWT. `404` for an unknown movie, `400` for a rating outside 1 to 5                                                         | Todo   |
 | FR-8   | My ratings                       | `GET /api/v2/ratings/me` needs a JWT and returns the caller's ratings                                                                                                            | Todo   |
-| FR-9   | Admin cache evict                | `POST /api/v2/admin/cache/evict` needs the `x-api-key` header (not a JWT), as in v1, and evicts the `movies` tag. A missing or wrong key gets v1's `401` and its plain-text body | Todo   |
-| FR-10  | Swagger shows both versions      | The Swagger UI lists a v1 and a v2 document. v2 lists all nine operations, v1 still lists its own, and the Bearer scheme applies to both                                         | Todo   |
+| FR-9   | Admin cache evict                | **Dropped.** `POST /api/v2/admin/cache/evict` is not built. It is a machine call for the deploy pipeline, which already uses the v1 endpoint, so v2 does not need a twin | Dropped |
+| FR-10  | Swagger shows both versions      | The Swagger UI lists a v1 and a v2 document. v2 lists its eight operations, v1 still lists its nine, and the Bearer scheme applies to both                                         | Todo   |
 | FR-11  | Docs and tooling                 | `_docs/api.md` lists the v2 endpoints, says they match v1 and drops "not designed yet". `_docs/architecture.md`, decision 15 and `Movies.Api.http` describe and exercise the final layout. `_docs/prds/_04-react-frontend-prd.md` gets the cache finding from NFR-10 | Todo   |
 
 ## 7. Non-functional requirements
@@ -76,9 +77,9 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 | NFR-1   | **v1 is untouched.** No v1 route, contract, query, policy or controller changes, and the v1 tests pass unchanged on every step                                                                    | Todo   |
 | NFR-2   | **Identical contract.** For the same request, v1 and v2 return the same status code, headers that matter (`Location`, content type) and body shape, including every error: the `ValidationFailureResponse` `400`, the `ProblemDetails` `404`, the binding `400` for a malformed body or query, and the `401` and `403`. The only allowed difference is the version in links and `Location` | Todo   |
 | NFR-3   | **Cache correctness.** Every v2 write evicts the `movies` tag. A v2 write is visible to the next v1 or v2 read, and the reverse. v1 and v2 reads are cached as separate entries (the path differs) and both vary by the same query keys | Todo   |
-| NFR-4   | **Authorisation** is policy-based, with the same policies and the same JWT secret, and the admin evict keeps its API-key check. No v2 endpoint is more open than its v1 twin                       | Todo   |
+| NFR-4   | **Authorisation** is policy-based, with the same policies and the same JWT secret. No v2 endpoint is more open than its v1 twin                       | Todo   |
 | NFR-5   | **No new moving parts.** No migrations, packages, services or `appsettings.json` keys                                                                                                              | Todo   |
-| NFR-6   | **Tests:** strict AAA, Testcontainers Postgres, Bogus data. Happy path, `404`, `400` and auth (`401`, `403`) for every endpoint. A Swagger test checks that both documents exist and v2 has nine operations | Todo   |
+| NFR-6   | **Tests:** strict AAA, Testcontainers Postgres, Bogus data. Happy path, `404`, `400` and auth (`401`, `403`) for every endpoint. A Swagger test checks that both documents exist and v2 has eight operations | Todo   |
 | NFR-7   | **Swagger:** operations carry names, tags and `Produces` metadata, so the UI and the OpenAPI document match the controllers' quality. Operation ids are unique across versions                    | Todo   |
 | NFR-8   | **Repo rules:** dependencies point inward, DTOs stay in `Movies.Contracts`, mapping stays in `Movies.Api/Mapping/`, nothing is hardcoded in C#                                                    | Todo   |
 | NFR-9   | **Error parity is tested, not assumed.** A parameterised test sends the same bad request (unknown id, invalid body, malformed JSON, `?page=abc`, missing or wrong role) to v1 and v2 and asserts the same status and body shape | Todo   |
@@ -90,14 +91,15 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
   `CreatedAtRoute` and `LinkGenerator`. The names need a version suffix, as the reference does (`GetMovieV2`). The spec
   settles how `MovieLinkBuilder` finds the right route per version.
 - **Swashbuckle with two kinds of endpoint.** Controllers and Minimal APIs are described by different explorers.
-  The skeleton already shows up, but nine operations may expose duplicate operation ids or missing tags.
+  The skeleton already shows up, but eight operations may expose duplicate operation ids or missing tags.
   I will check the real UI, not only the JSON.
 - **Error bodies differ by default.** `[ApiController]` turns `NotFound()` and binding failures into `ProblemDetails`.
   `Results.NotFound()` returns an empty body, and a bad JSON body or `?page=abc` raises `BadHttpRequestException`.
   D8 closes this with a shared helper and handling. `ValidationMappingMiddleware` already runs before both
   `MapControllers` and the endpoints, so the validation `400` should carry over, but NFR-9 proves it.
-- **Swagger depends on a real check.** The skeleton shows up, but I have not confirmed that nine Minimal API operations
-  per version get unique operation ids, tags and the Bearer scheme. FR-10 is verified in the UI, not only the JSON.
+- **Swagger depends on a real check.** Resolved in T7. Checking the running UI found that its version list was built
+  before the v2 endpoints were mapped, so it offered only v1 (the documents were fine). `UseSwaggerUI` now runs after
+  the endpoints are mapped. v2 operations also needed tags matching v1's.
 - **Links and `Location`.** `MovieLinkBuilder` resolves routes by name, and the skeleton passes it no builder, so a v2
   list would silently lose its `self` links (D9, FR-4).
 - **Two cache namespaces, one tag.** A write must evict both versions' entries (NFR-3). The shared `movies` tag does
@@ -136,39 +138,39 @@ When this is picked up it becomes a new PRD, written against the parity layout.
 
 ## 10. Success metrics
 
-- Every v1 endpoint has a v2 twin, and the shared tests pass for both versions.
+- Every v1 endpoint except the admin cache evict has a v2 twin, and the shared tests pass for both versions.
 - The Swagger UI shows v1 and v2, and I can call each v2 operation from it with a Bearer token.
 - A write through v2 shows up in a v1 read at once, and the reverse.
 - The v1 suite passes unchanged (NFR-1).
 
 ## 11. Traceability and status (master tracker)
 
-The plan's task statuses roll up here. Update this table whenever a plan task changes status. The SDD and plan do not
-yet match this revision, so the columns are filled in when they are rewritten.
+The plan's task statuses roll up here. Update this table whenever a plan task changes status. NFR-1, NFR-5 and NFR-8
+are checked in T9, the final verification.
 
 | Req     | SDD section  | Plan task(s)  | Status    |
 |---------|--------------|---------------|-----------|
-| FR-1    | —            | —             | Todo      |
-| FR-2    | —            | —             | Todo      |
-| FR-3    | —            | —             | Todo      |
-| FR-4    | —            | —             | Todo      |
-| FR-5    | —            | —             | Todo      |
-| FR-6    | —            | —             | Todo      |
-| FR-7    | —            | —             | Todo      |
-| FR-8    | —            | —             | Todo      |
-| FR-9    | —            | —             | Todo      |
-| FR-10   | —            | —             | Todo      |
-| FR-11   | —            | —             | Todo      |
-| NFR-1   | —            | every task    | Todo      |
-| NFR-2   | —            | —             | Todo      |
-| NFR-3   | —            | —             | Todo      |
-| NFR-4   | —            | —             | Todo      |
-| NFR-5   | —            | —             | Todo      |
-| NFR-6   | —            | —             | Todo      |
-| NFR-7   | —            | —             | Todo      |
-| NFR-8   | —            | —             | Todo      |
-| NFR-9   | —            | —             | Todo      |
-| NFR-10  | —            | —             | Todo      |
+| FR-1    | §3.1, §3.2   | T1            | Done      |
+| FR-2    | §2, §3.2     | T4            | Done      |
+| FR-3    | §2, §3.3     | T3            | Done      |
+| FR-4    | §2, §3.5     | T3            | Done      |
+| FR-5    | §2           | T4            | Done      |
+| FR-6    | §2           | T4            | Done      |
+| FR-7    | §2           | T5            | Done      |
+| FR-8    | §2           | T5            | Done      |
+| FR-9    | —            | T6            | Dropped   |
+| FR-10   | §3.6         | T7            | Done      |
+| FR-11   | §5           | T8            | Done      |
+| NFR-1   | §3.5         | every task    | Todo      |
+| NFR-2   | §3.4         | T2 to T6      | Done      |
+| NFR-3   | §2           | T3, T4        | Done      |
+| NFR-4   | §2, §3.4     | T4 to T6      | Done      |
+| NFR-5   | —            | T9            | Todo      |
+| NFR-6   | §4           | T2 to T7      | Done      |
+| NFR-7   | §3.6         | T7            | Done      |
+| NFR-8   | §3.1         | T9            | Todo      |
+| NFR-9   | §4           | T2 to T6      | Done      |
+| NFR-10  | §4           | T3, T7        | Done      |
 
 ## 12. Change log
 
@@ -178,5 +180,7 @@ yet match this revision, so the columns are filled in when they are rewritten.
 | 2026-10-17  | Rating scale corrected to 1 to 5 (matches `RatingService`)                                                                                |
 | 2026-10-17  | Trimmed to the slim scope; the frontend is built on v1 first, so the PRD was parked                                                       |
 | 2026-10-22  | Rescoped to a v1 parity port in the style of the course's `7.MinimalApi` reference. The browse design moved to §9. FR and NFR rewritten   |
-| 2026-10-22  | FR-9 and NFR-4 corrected: the admin evict is guarded by the `x-api-key` header, not the `Admin` policy                                    |
 | 2026-10-22  | Gap review: errors match v1 exactly (D8), versioned route names and links (D9), error and cache parity tests (NFR-9, NFR-10), wider docs scope |
+| 2026-10-22  | FR-9 and NFR-4 corrected: the admin evict is guarded by the `x-api-key` header, not the `Admin` policy                                    |
+| 2026-10-22  | Built (T1 to T7): eight v2 endpoints, error and cache parity tests, Swagger lists both versions. Swagger UI version list bug found by a live check and fixed. T8 docs done |
+| 2026-10-22  | FR-9 dropped: the admin cache evict stays v1-only. v2 has eight endpoints; the API-key endpoint filter was removed |
