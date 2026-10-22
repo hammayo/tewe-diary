@@ -16,7 +16,7 @@ public static class GetMovieEndpoint
             {
                 var movie = await movieService.GetByIdOrSlugAsync(idOrSlug, context.GetUserId(), token);
 
-                return movie is null ? Results.NotFound() : Results.Ok(movie.MapToResponse(urls, null));
+                return movie is null ? V2Problems.NotFound() : Results.Ok(movie.MapToResponse(urls, null));
             })
             .WithName(Name)
             .HasApiVersion(2.0)
