@@ -51,6 +51,11 @@ public class V1V2ParityTests
     [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000", "trusted", """{"title":"x","yearOfRelease":2000,"genres":["a"]}""")] // missing
     [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000", "trusted", null)]           // wrong role
     [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000", "admin", null)]             // missing
+    [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "user", """{"rating":4}""")] // missing movie
+    [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "none", """{"rating":4}""")] // not signed in
+    [InlineData("PUT", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "user", "{ not json")]         // malformed body
+    [InlineData("DELETE", "movies/7f9c3d1e-0000-0000-0000-000000000000/ratings", "user", null)]             // nothing to remove
+    [InlineData("GET", "ratings/me", "none", null)]                                                        // not signed in
     public async Task a_write_gets_the_same_answer_in_both_versions(string method, string path, string caller, string? body)
     {
         // Arrange
@@ -59,6 +64,7 @@ public class V1V2ParityTests
         {
             "trusted" => _fx.Factory.CreateAuthenticatedClient(trusted: true),
             "admin" => _fx.Factory.CreateAuthenticatedClient(admin: true),
+            "user" => _fx.Factory.CreateAuthenticatedClient(Guid.NewGuid()),
             _ => _fx.Factory.CreateAnonymousClient()
         };
 

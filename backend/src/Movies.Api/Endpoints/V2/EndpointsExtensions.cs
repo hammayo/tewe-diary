@@ -17,6 +17,7 @@ public static class EndpointsExtensions
         var group = app.MapGroup(string.Empty).WithApiVersionSet(versions);
 
         group.MapMovieEndpoints();
+        group.MapRatingEndpoints();
 
         return app;
     }
