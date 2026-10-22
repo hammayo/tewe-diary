@@ -40,6 +40,9 @@ public static class WebApplicationExtensions
         {
             app.UseSwaggerUI(x =>
             {
+                // Colours the API version badge next to the title (the first <small>; the second, with
+                // .version-stamp, is "OAS 3.0"), so the version needs no repeat in the description.
+                x.HeadContent = "<style>.swagger-ui .info .title small:not(.version-stamp) { background: #4b0082; }</style>";
                 foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
                 {
                     x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);

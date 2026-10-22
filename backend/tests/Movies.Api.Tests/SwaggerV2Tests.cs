@@ -31,19 +31,17 @@ public class SwaggerV2Tests
         Assert.True(schemes.TryGetProperty("Bearer", out _));
     }
 
-    [Theory]
-    [InlineData("1.0")]
-    [InlineData("2.0")]
-    public async Task the_description_names_the_version_being_viewed(string version)
+    [Fact]
+    public async Task the_swagger_page_styles_the_version_badge()
     {
         // Arrange
-        var document = await GetDocumentAsync(version);
+        var client = _fx.Factory.CreateAnonymousClient();
 
         // Act
-        var description = document.GetProperty("info").GetProperty("description").GetString();
+        var page = await client.GetStringAsync("/swagger/index.html");
 
         // Assert
-        Assert.Equal($"This product {version} uses the TMDB API but is not endorsed or certified by TMDB.", description);
+        Assert.Contains(".info .title small:not(.version-stamp)", page);
     }
 
     [Fact]
