@@ -2,7 +2,7 @@
 
 |             |                                                                                                                      |
 |-------------|----------------------------------------------------------------------------------------------------------------------|
-| **Status**  | Built, in final review — 2026-10-22. Scope is the v1 parity port. The browse design is **Parked** (see §9)                            |
+| **Status**  | Built and verified — 2026-10-22. Scope is the v1 parity port. The browse design is **Parked** (see §9)                            |
 | **Owner**   | Hammy Babar                                                                                                          |
 | **Branch**  | `feature/roadmap-minimal-api-v2`                                                                                     |
 | **Doc set** | **PRD (this)** → SDD `_tasks/03-v2-browse-api-spec.md` → plan `_tasks/03-v2-browse-api-plan.md`                      |
@@ -58,32 +58,32 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 
 | Id     | Requirement                      | Acceptance                                                                                                                                                                       | Status |
 |--------|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| FR-1   | Shared version set and layout    | One `ApiVersionSet` (1.0 and 2.0) and aggregators `MapMovieEndpoints` and `MapRatingEndpoints` behind one `MapApiEndpoints`. The skeleton is split into its own class | Todo   |
-| FR-2   | Create movie                     | `POST /api/v2/movies` needs `Trusted`. Returns `201` with `Location` and the movie, `400` with the validation body on bad input, `401` and `403` as in v1                         | Todo   |
-| FR-3   | Get movie                        | `GET /api/v2/movies/{idOrSlug}` is anonymous and cached. A GUID looks up by id, anything else by slug. `404` when missing. `userRating` is filled for a signed-in caller          | Todo   |
-| FR-4   | List movies                      | `GET /api/v2/movies` with the v1 filters, sorting and paging. Anonymous and cached. Items carry the same `self` link, absolute and pointing at the v2 URL (the skeleton passes no link builder today). A malformed query (`?page=abc`) gets v1's `400` body | Todo   |
-| FR-5   | Update movie                     | `PUT /api/v2/movies/{id}` needs `Trusted`. `200` with the movie, `404` when missing, `400` on bad input                                                                          | Todo   |
-| FR-6   | Delete movie                     | `DELETE /api/v2/movies/{id}` needs `Admin`. `200` or `404` as in v1                                                                                                              | Todo   |
-| FR-7   | Rate and un-rate                 | `PUT` and `DELETE /api/v2/movies/{id}/ratings` need a JWT. `404` for an unknown movie, `400` for a rating outside 1 to 5                                                         | Todo   |
-| FR-8   | My ratings                       | `GET /api/v2/ratings/me` needs a JWT and returns the caller's ratings                                                                                                            | Todo   |
+| FR-1   | Shared version set and layout    | One `ApiVersionSet` (1.0 and 2.0) and aggregators `MapMovieEndpoints` and `MapRatingEndpoints` behind one `MapApiEndpoints`. The skeleton is split into its own class | Done   |
+| FR-2   | Create movie                     | `POST /api/v2/movies` needs `Trusted`. Returns `201` with `Location` and the movie, `400` with the validation body on bad input, `401` and `403` as in v1                         | Done   |
+| FR-3   | Get movie                        | `GET /api/v2/movies/{idOrSlug}` is anonymous and cached. A GUID looks up by id, anything else by slug. `404` when missing. `userRating` is filled for a signed-in caller          | Done   |
+| FR-4   | List movies                      | `GET /api/v2/movies` with the v1 filters, sorting and paging. Anonymous and cached. Items carry the same `self` link, absolute and pointing at the v2 URL (the skeleton passes no link builder today). A malformed query (`?page=abc`) gets v1's `400` body | Done   |
+| FR-5   | Update movie                     | `PUT /api/v2/movies/{id}` needs `Trusted`. `200` with the movie, `404` when missing, `400` on bad input                                                                          | Done   |
+| FR-6   | Delete movie                     | `DELETE /api/v2/movies/{id}` needs `Admin`. `200` or `404` as in v1                                                                                                              | Done   |
+| FR-7   | Rate and un-rate                 | `PUT` and `DELETE /api/v2/movies/{id}/ratings` need a JWT. `404` for an unknown movie, `400` for a rating outside 1 to 5                                                         | Done   |
+| FR-8   | My ratings                       | `GET /api/v2/ratings/me` needs a JWT and returns the caller's ratings                                                                                                            | Done   |
 | FR-9   | Admin cache evict                | **Dropped.** `POST /api/v2/admin/cache/evict` is not built. It is a machine call for the deploy pipeline, which already uses the v1 endpoint, so v2 does not need a twin | Dropped |
-| FR-10  | Swagger shows both versions      | The Swagger UI lists a v1 and a v2 document. v2 lists its eight operations, v1 still lists its nine, and the Bearer scheme applies to both                                         | Todo   |
-| FR-11  | Docs and tooling                 | `_docs/api.md` lists the v2 endpoints, says they match v1 and drops "not designed yet". `_docs/architecture.md`, decision 15 and `Movies.Api.http` describe and exercise the final layout. `_docs/prds/_04-react-frontend-prd.md` gets the cache finding from NFR-10 | Todo   |
+| FR-10  | Swagger shows both versions      | The Swagger UI lists a v1 and a v2 document. v2 lists its eight operations, v1 still lists its nine, and the Bearer scheme applies to both                                         | Done   |
+| FR-11  | Docs and tooling                 | `_docs/api.md` lists the v2 endpoints, says they match v1 and drops "not designed yet". `_docs/architecture.md`, decision 15 and `Movies.Api.http` describe and exercise the final layout. `_docs/prds/_04-react-frontend-prd.md` gets the cache finding from NFR-10 | Done   |
 
 ## 7. Non-functional requirements
 
 | Id      | Requirement                                                                                                                                                                                       | Status |
 |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| NFR-1   | **v1 is untouched.** No v1 route, contract, query, policy or controller changes, and the v1 tests pass unchanged on every step                                                                    | Todo   |
-| NFR-2   | **Identical contract.** For the same request, v1 and v2 return the same status code, headers that matter (`Location`, content type) and body shape, including every error: the `ValidationFailureResponse` `400`, the `ProblemDetails` `404`, the binding `400` for a malformed body or query, and the `401` and `403`. The only allowed difference is the version in links and `Location` | Todo   |
-| NFR-3   | **Cache correctness.** Every v2 write evicts the `movies` tag. A v2 write is visible to the next v1 or v2 read, and the reverse. v1 and v2 reads are cached as separate entries (the path differs) and both vary by the same query keys | Todo   |
-| NFR-4   | **Authorisation** is policy-based, with the same policies and the same JWT secret. No v2 endpoint is more open than its v1 twin                       | Todo   |
-| NFR-5   | **No new moving parts.** No migrations, packages, services or `appsettings.json` keys                                                                                                              | Todo   |
-| NFR-6   | **Tests:** strict AAA, Testcontainers Postgres, Bogus data. Happy path, `404`, `400` and auth (`401`, `403`) for every endpoint. A Swagger test checks that both documents exist and v2 has eight operations | Todo   |
-| NFR-7   | **Swagger:** operations carry names, tags and `Produces` metadata, so the UI and the OpenAPI document match the controllers' quality. Operation ids are unique across versions                    | Todo   |
-| NFR-8   | **Repo rules:** dependencies point inward, DTOs stay in `Movies.Contracts`, mapping stays in `Movies.Api/Mapping/`, nothing is hardcoded in C#                                                    | Todo   |
-| NFR-9   | **Error parity is tested, not assumed.** A parameterised test sends the same bad request (unknown id, invalid body, malformed JSON, `?page=abc`, missing or wrong role) to v1 and v2 and asserts the same status and body shape | Todo   |
-| NFR-10  | **Signed-in reads are not served from the anonymous cache.** The default output-cache policy skips requests with an `Authorization` header. A v2 test proves a signed-in `GET` returns the caller's `userRating`, and the result is recorded for the frontend PRD's first spike | Todo   |
+| NFR-1   | **v1 is untouched.** No v1 route, contract, query, policy or controller changes, and the v1 tests pass unchanged on every step                                                                    | Done   |
+| NFR-2   | **Identical contract.** For the same request, v1 and v2 return the same status code, headers that matter (`Location`, content type) and body shape, including every error: the `ValidationFailureResponse` `400`, the `ProblemDetails` `404`, the binding `400` for a malformed body or query, and the `401` and `403`. The only allowed difference is the version in links and `Location` | Done   |
+| NFR-3   | **Cache correctness.** Every v2 write evicts the `movies` tag. A v2 write is visible to the next v1 or v2 read, and the reverse. v1 and v2 reads are cached as separate entries (the path differs) and both vary by the same query keys | Done   |
+| NFR-4   | **Authorisation** is policy-based, with the same policies and the same JWT secret. No v2 endpoint is more open than its v1 twin                       | Done   |
+| NFR-5   | **No new moving parts.** No migrations, packages, services or `appsettings.json` keys                                                                                                              | Done   |
+| NFR-6   | **Tests:** strict AAA, Testcontainers Postgres, Bogus data. Happy path, `404`, `400` and auth (`401`, `403`) for every endpoint. A Swagger test checks that both documents exist and v2 has eight operations | Done   |
+| NFR-7   | **Swagger:** operations carry names, tags and `Produces` metadata, so the UI and the OpenAPI document match the controllers' quality. Operation ids are unique across versions                    | Done   |
+| NFR-8   | **Repo rules:** dependencies point inward, DTOs stay in `Movies.Contracts`, mapping stays in `Movies.Api/Mapping/`, nothing is hardcoded in C#                                                    | Done   |
+| NFR-9   | **Error parity is tested, not assumed.** A parameterised test sends the same bad request (unknown id, invalid body, malformed JSON, `?page=abc`, missing or wrong role) to v1 and v2 and asserts the same status and body shape | Done   |
+| NFR-10  | **Signed-in reads are not served from the anonymous cache.** The default output-cache policy skips requests with an `Authorization` header. A v2 test proves a signed-in `GET` returns the caller's `userRating`, and the result is recorded for the frontend PRD's first spike | Done   |
 
 ## 8. Risks and known limitations
 
@@ -161,14 +161,14 @@ are checked in T9, the final verification.
 | FR-9    | —            | T6            | Dropped   |
 | FR-10   | §3.6         | T7            | Done      |
 | FR-11   | §5           | T8            | Done      |
-| NFR-1   | §3.5         | every task    | Todo      |
+| NFR-1   | §3.5         | every task    | Done      |
 | NFR-2   | §3.4         | T2 to T6      | Done      |
 | NFR-3   | §2           | T3, T4        | Done      |
 | NFR-4   | §2, §3.4     | T4 to T6      | Done      |
-| NFR-5   | —            | T9            | Todo      |
+| NFR-5   | —            | T9            | Done      |
 | NFR-6   | §4           | T2 to T7      | Done      |
 | NFR-7   | §3.6         | T7            | Done      |
-| NFR-8   | §3.1         | T9            | Todo      |
+| NFR-8   | §3.1         | T9            | Done      |
 | NFR-9   | §4           | T2 to T6      | Done      |
 | NFR-10  | §4           | T3, T7        | Done      |
 
