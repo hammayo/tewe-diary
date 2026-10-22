@@ -39,7 +39,7 @@ public static class WebApplicationExtensions
 
         app.UseMiddleware<ValidationMappingMiddleware>();
         app.MapControllers();
-        app.MapMoviesV2();
+        app.MapApiEndpoints();
 
         return app;
     }
