@@ -29,7 +29,7 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 - The browse design in §9: cards, detail shape, genre filter, search, ranking data, home, similar, people.
 - A v2 rate-limit, CORS, compression or cache policy. v2 reuses v1's.
 - A v2 admin cache evict (FR-9): only the deploy pipeline calls it, and it keeps using v1.
-- A v2 SDK client, and the frontend (it is built on v1, see `_04-react-frontend-prd.md`).
+- A v2 SDK client, and the frontend (see `_04-react-frontend-prd.md`, which calls the v2 parity port).
 - Migrations, new packages or new configuration keys.
 
 ## 4. Users and use cases
@@ -115,9 +115,9 @@ it cannot be used as an API. The next step is  v1 surface be served by Minimal A
 I designed a different v2 earlier and parked it. It is the likely next step once parity is in place, and the reason
 the version set is shared. It is not built, and none of it is in scope above.
 
-**Why it was parked.** The React frontend (`_04-react-frontend-prd.md`) needs only what v1 serves. The browse design
-is for when the UI hits a v1 limit: a genre filter, slow list responses once users have rated many movies or a home
-screen of rails.
+**Why it was parked.** The first phase of the React frontend (`_04-react-frontend-prd.md`) needs only what v1 and the
+v2 parity port serve. The browse design is for when the UI hits that limit. Phase 2 of the frontend (top rated, popular,
+genre and watch-list rows) is the first consumer, and its PRD §8 maps each gap to the B-ids below.
 
 **The design, kept as written.**
 
@@ -133,6 +133,7 @@ screen of rails.
 | B8      | Card `rating` is the community average (one decimal) or `null`, with `ratingCount`. A TMDB-score fallback comes with the ranking data                                        |
 | B9      | Ranking columns on `movie_details` (popularity, vote average and count, release date), then ranking sorts, a home screen, similar movies, people and `GET /me/ratings`      |
 | B10     | Targets: cached reads p95 under 200 ms and uncached browse under 400 ms on the seeded 11k database, a 25-card page under 15 KB, and a load script under `scripts/`          |
+| B11     | A watch list that follows the signed-in user: a `watchlist(userid, movieid, addedat)` table in an expand-only migration, `GET`, `PUT` and `DELETE` under `/api/v2/me/watchlist`, any valid JWT, never cached, and the list returns cards (B1) |
 
 When this is picked up it becomes a new PRD, written against the parity layout.
 
@@ -184,3 +185,4 @@ are checked in T9, the final verification.
 | 2026-10-22  | FR-9 and NFR-4 corrected: the admin evict is guarded by the `x-api-key` header, not the `Admin` policy                                    |
 | 2026-10-22  | Built (T1 to T7): eight v2 endpoints, error and cache parity tests, Swagger lists both versions. Swagger UI version list bug found by a live check and fixed. T8 docs done |
 | 2026-10-22  | FR-9 dropped: the admin cache evict stays v1-only. v2 has eight endpoints; the API-key endpoint filter was removed |
+| 2026-10-22  | Browse design §9: added B11 (watch list) and pointed at the frontend PRD's gap table                                                  |
