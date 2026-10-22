@@ -18,6 +18,7 @@ public static class EndpointsExtensions
 
         group.MapMovieEndpoints();
         group.MapRatingEndpoints();
+        group.MapAdminEndpoints();
 
         return app;
     }
