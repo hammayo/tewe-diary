@@ -24,15 +24,15 @@ GitHub Actions builds, tests, migrates and deploys to Azure.
 
 ## What it demonstrates
 
-| Area                 | Practice shown                                                                                                                    |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| **API design**       | Resource-oriented routes, correct verbs + status codes, URL-segment **API versioning**, pagination, id-or-slug lookup             |
-| **Architecture**     | Clean/layered design with an enforced inward **dependency rule**; DTO ↔ domain mapping isolated at the edge                       |
-| **Security**         | JWT bearer auth from a **separate Identity service**; **policy-based** authorization (`Admin`, `Trusted`); API-key filter for ops |
-| **Performance**      | Response **output caching** with **tag-based eviction** on writes                                                                 |
-| **Data**             | **Dapper** over **PostgreSQL**; **FluentMigrator** versioned migrations; schema owned by migrations                               |
-| **Testing**          | xUnit unit + **integration tests** against a real Postgres (Testcontainers), AAA style, `Bogus` data                              |
-| **Tooling / DevOps** | Dockerised stack, a **CLI** for `migrate`/`import`, TMDB pipeline, **GitHub Actions** CI/CD with Azure Key Vault                  |
+| Area                 | Practice shown                                                                                                                                              |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **API design**       | Resource-oriented routes, correct verbs + status codes, URL-segment **API versioning** (v1 controllers, v2 **Minimal APIs**), pagination, id-or-slug lookup |
+| **Architecture**     | Clean/layered design with an enforced inward **dependency rule**; DTO ↔ domain mapping isolated at the edge                                                 |
+| **Security**         | JWT bearer auth from a **separate Identity service**; **policy-based** authorization (`Admin`, `Trusted`); API-key filter for ops                           |
+| **Performance**      | Response **output caching** with **tag-based eviction** on writes                                                                                           |
+| **Data**             | **Dapper** over **PostgreSQL**; **FluentMigrator** versioned migrations; schema owned by migrations                                                         |
+| **Testing**          | xUnit unit + **integration tests** against a real Postgres (Testcontainers), AAA style, `Bogus` data                                                        |
+| **Tooling / DevOps** | Dockerised stack, a **CLI** for `migrate`/`import`, TMDB pipeline, **GitHub Actions** CI/CD with Azure Key Vault                                            |
 
 ## System at a glance
 
@@ -82,9 +82,10 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Minimal API v2** (skeleton in place: one read endpoint in `Endpoints/V2/`). A parallel `v2` surface built with .NET Minimal APIs, developed
-  in a feature branch and running beside the v1 controllers. URL-segment versioning
-  already supports this, and the SDK will gain a v2 client alongside it.
+- **Upgrade to the latest .NET** (.NET 10, the current LTS, supported until November 2028). .NET 9 reaches the end of its
+  support on 10 November 2026 ([Microsoft's announcement](https://devblogs.microsoft.com/dotnet/dotnet-8-9-end-of-support/)),
+  so I'll move the target framework in `backend/Directory.Build.props` and the `DOTNET_VERSION` build argument in the
+  backend Dockerfiles, then update the packages in `backend/Directory.Packages.props` to match.
 - **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:
@@ -95,3 +96,5 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
   - `Trusted`: creating and editing movies, with validation errors shown inline from the
     `400` contract
   - `Admin`: deleting movies
+- **Richer v2 browse API** (parked, see [the PRD](_docs/prds/_03-v2-browse-api-prd.md)). Genre filter, search and card
+  payloads on top of the v2 Minimal API, with the SDK gaining a v2 client alongside it.

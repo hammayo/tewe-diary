@@ -10,10 +10,13 @@
 #   SONAR_TOKEN=<token> scripts/sonar-scan.sh --no-tests   # issues only, no coverage
 set -euo pipefail
 
-: "${SONAR_TOKEN:?Set SONAR_TOKEN (SonarCloud: My Account, Security)}"
-
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+# Pick up SONAR_TOKEN from .env (the IDE run configuration doesn't inherit it).
+[ -f .env ] && { set -a; . ./.env; set +a; }
+
+: "${SONAR_TOKEN:?Set SONAR_TOKEN in .env or the environment (SonarCloud: My Account, Security)}"
 
 command -v dotnet-sonarscanner >/dev/null || dotnet tool install --global dotnet-sonarscanner
 export PATH="$PATH:$HOME/.dotnet/tools"

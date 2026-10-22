@@ -94,3 +94,63 @@ Authorization: Bearer {{token}}
 ### Evict the "movies" output cache (API-key protected, no JWT).
 POST {{apiHost}}/api/v1/admin/cache/evict
 x-api-key: {{apiKey}}
+
+################################################################################
+### v2 (Minimal APIs): the same endpoints, shapes and rules as v1, under /api/v2 (no admin cache evict; that stays v1).
+### Reuses the token and ids from the requests above.
+################################################################################
+
+### v2: get all movies (anonymous). Items carry a self link that points at /api/v2.
+GET {{apiHost}}/api/v2/movies?page=1&pageSize=10&sortBy=-yearOfRelease
+Accept: application/json
+
+### v2: get a single movie by id or slug (anonymous).
+GET {{apiHost}}/api/v2/movies/{{movieId}}
+Accept: application/json
+
+### v2: create a movie (Trusted). Location points at /api/v2/movies/{id}.
+# @name createMovieV2
+POST {{apiHost}}/api/v2/movies
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Reticulated Splines Revisited",
+  "yearOfRelease": 2024,
+  "genres": [ "Comedy" ]
+}
+
+@movieIdV2 = {{createMovieV2.response.body.$.id}}
+
+### v2: update the movie (Trusted).
+PUT {{apiHost}}/api/v2/movies/{{movieIdV2}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Reticulated Splines Revisited",
+  "yearOfRelease": 2024,
+  "genres": [ "Comedy", "Action" ]
+}
+
+### v2: rate the movie 1-5 (any authenticated user).
+PUT {{apiHost}}/api/v2/movies/{{movieIdV2}}/ratings
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rating": 4
+}
+
+### v2: list the current user's ratings.
+GET {{apiHost}}/api/v2/ratings/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### v2: remove this user's rating for the movie.
+DELETE {{apiHost}}/api/v2/movies/{{movieIdV2}}/ratings
+Authorization: Bearer {{token}}
+
+### v2: delete the movie (Admin).
+DELETE {{apiHost}}/api/v2/movies/{{movieIdV2}}
+Authorization: Bearer {{token}}

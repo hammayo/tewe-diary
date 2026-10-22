@@ -39,7 +39,7 @@ is kept comment-free):
 
 ## Run
 
-**Full stack (Movies API + Identity + Postgres):**
+**Full stack (Movies API + Identity + Frontend shell + Postgres):**
 - Rider: run the `Full Stack` or `Docker Stack` configuration under `.run/`.
 - Shell: `bash scripts/stack-up.sh` builds and starts the stack detached, then prints the URLs and a
   **Movies data** summary:
