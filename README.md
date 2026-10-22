@@ -82,7 +82,8 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Upgrade to the latest .NET** (.NET 10, the current LTS, supported until November 2028). .NET 9 reaches the end of its
+- **Upgrade to the latest .NET** (.NET 10, the current LTS, supported until November 2028, see
+  [the PRD](_docs/prds/_05-dotnet-10-upgrade-prd.md)). .NET 9 reaches the end of its
   support on 10 November 2026 ([Microsoft's announcement](https://devblogs.microsoft.com/dotnet/dotnet-8-9-end-of-support/)),
   so I'll move the target framework in `backend/Directory.Build.props` and the `DOTNET_VERSION` build argument in the
   backend Dockerfiles, then update the packages in `backend/Directory.Packages.props` to match.
