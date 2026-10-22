@@ -19,13 +19,6 @@ public static class WebApplicationExtensions
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI(x =>
-            {
-                foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
-                {
-                    x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
-                }
-            });
         }
 
         app.MapHealthChecks("_health");
@@ -40,6 +33,19 @@ public static class WebApplicationExtensions
         app.UseMiddleware<ValidationMappingMiddleware>();
         app.MapControllers();
         app.MapApiEndpoints();
+
+        // After every endpoint is mapped: the version list is read here, so an earlier call would
+        // only see the controllers (v1) and the UI would never offer the Minimal API version (v2).
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwaggerUI(x =>
+            {
+                foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
+                {
+                    x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
+                }
+            });
+        }
 
         return app;
     }

@@ -24,6 +24,7 @@ public static class GetAllMoviesEndpoint
             })
             .WithName(Name)
             .HasApiVersion(2.0)
+            .WithTags("Movies")
             .CacheOutput("MovieCache")
             .Produces<MoviesResponse>();
 

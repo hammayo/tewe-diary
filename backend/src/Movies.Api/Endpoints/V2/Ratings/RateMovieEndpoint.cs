@@ -20,6 +20,7 @@ public static class RateMovieEndpoint
             })
             .WithName(Name)
             .HasApiVersion(2.0)
+            .WithTags("Ratings")
             .RequireAuthorization()
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)

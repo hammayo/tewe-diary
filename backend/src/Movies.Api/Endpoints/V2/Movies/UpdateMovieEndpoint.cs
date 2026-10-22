@@ -29,6 +29,7 @@ public static class UpdateMovieEndpoint
             })
             .WithName(Name)
             .HasApiVersion(2.0)
+            .WithTags("Movies")
             .RequireAuthorization(AuthConstants.TrustedMemberPolicyName)
             .Produces<MovieResponse>()
             .Produces(StatusCodes.Status404NotFound)

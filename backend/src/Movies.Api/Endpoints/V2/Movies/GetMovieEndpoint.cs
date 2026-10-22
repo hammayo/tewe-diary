@@ -20,6 +20,7 @@ public static class GetMovieEndpoint
             })
             .WithName(Name)
             .HasApiVersion(2.0)
+            .WithTags("Movies")
             .CacheOutput("MovieCache")
             .Produces<MovieResponse>()
             .Produces(StatusCodes.Status404NotFound);

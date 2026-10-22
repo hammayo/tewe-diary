@@ -20,6 +20,7 @@ public static class GetUserRatingsEndpoint
             })
             .WithName(Name)
             .HasApiVersion(2.0)
+            .WithTags("Ratings")
             .RequireAuthorization()
             .Produces<IEnumerable<MovieRatingResponse>>();
 
