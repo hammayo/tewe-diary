@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using Movies.Api.Endpoints.V2;
 using Movies.Contracts.Responses;
 
 namespace Movies.Api.Mapping;
@@ -17,7 +18,7 @@ public class MovieLinkBuilder
         _httpContextAccessor = httpContextAccessor;
     }
 
-    // "self": GET the movie by slug. Null outside a request, or if the route can't be resolved, so a
+    // "self": GET the movie by slug, on the version being served (v1 controller action or v2 endpoint name). Null outside a request, or if the route can't be resolved, so a
     // response is never given a broken link.
     public Link? Self(string idOrSlug)
     {
@@ -27,10 +28,13 @@ public class MovieLinkBuilder
             return null;
         }
 
-        var version = httpContext.GetRequestedApiVersion()?.ToString() ?? "1.0";
-        var href = _linkGenerator.GetUriByAction(httpContext,
-            action: "GetV1", controller: "Movies",
-            values: new { idOrSlug, version });
+        var requested = httpContext.GetRequestedApiVersion();
+        var version = requested?.ToString() ?? "1.0";
+        var href = requested?.MajorVersion == 2
+            ? _linkGenerator.GetUriByName(httpContext, GetMovieEndpoint.Name, new { idOrSlug, version })
+            : _linkGenerator.GetUriByAction(httpContext,
+                action: "GetV1", controller: "Movies",
+                values: new { idOrSlug, version });
 
         return href is null ? null : new Link { Href = href, Rel = "self", Type = "GET" };
     }

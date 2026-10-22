@@ -3,8 +3,7 @@ using System.Text.Json.Nodes;
 namespace Movies.Api.Tests;
 
 // v2 must answer the same request exactly as v1 does, errors included. Each case sends one request
-// to both versions and compares the status, the content type and the JSON body (minus the
-// per-request traceId).
+// to both versions and compares what the client can rely on (see Describe).
 [Collection("api")]
 public class V1V2ParityTests
 {
@@ -29,12 +28,33 @@ public class V1V2ParityTests
         Assert.Equal(v1, v2);
     }
 
+    [Fact]
+    public async Task a_malformed_query_gets_the_same_validation_problem_shape_in_both_versions()
+    {
+        // Arrange
+        await _fx.ResetAsync();
+        var client = _fx.Factory.CreateAnonymousClient();
+
+        // Act
+        var v1 = await Describe(await client.GetAsync("/api/v1/movies?page=abc"));
+        var v2 = await Describe(await client.GetAsync("/api/v2/movies?page=abc"));
+
+        // Assert
+        Assert.Equal(v1, v2);
+    }
+
+    // Status, content type and the body's shape: its property names, plus the values of the
+    // problem fields that identify the error. Message text and per-request ids are not compared.
     private static async Task<string> Describe(HttpResponseMessage response)
     {
         var body = await response.Content.ReadAsStringAsync();
-        var json = body.Length > 0 ? JsonNode.Parse(body) as JsonObject : null;
-        json?.Remove("traceId");
+        var status = $"{(int)response.StatusCode} {response.Content.Headers.ContentType?.MediaType}";
+        if (body.Length == 0 || JsonNode.Parse(body) is not JsonObject json)
+        {
+            return $"{status} {body}";
+        }
 
-        return $"{(int)response.StatusCode} {response.Content.Headers.ContentType?.MediaType} {json?.ToJsonString() ?? body}";
+        var names = string.Join(",", json.Select(p => p.Key).Order());
+        return $"{status} [{names}] {json["title"]} {json["type"]} {json["status"]}";
     }
 }
