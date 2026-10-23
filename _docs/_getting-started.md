@@ -128,4 +128,8 @@ To populate real data, see the [TMDB import runbook](tmdb-import.md).
 
 Pull requests from forks are skipped, because GitHub does not give them the secret.
 
+The frontend is analysed for issues but left out of the coverage condition (`sonar.coverage.exclusions` has `frontend/**`): its own
+`frontend.yml` runs lint, typecheck and the unit tests, and no frontend coverage is sent to SonarCloud, so counting it would only
+report 0%.
+
 To scan locally, put the same token in `.env` as `SONAR_TOKEN` and run `bash scripts/sonar-scan.sh` (or the Rider **Sonar Scan** run configuration). It needs Java 17+ and Docker; `--no-tests` skips coverage.

@@ -48,7 +48,7 @@ function ManageScreen({ canDelete }: { canDelete: boolean }) {
 
   function onSaved(slug: string) {
     if (edit && edit !== "new" && slug !== edit) {
-      navigate(`/movies/${slug}`); // the slug is built from title and year, so the old address is gone
+      void navigate(`/movies/${slug}`); // the slug is built from title and year, so the old address is gone
       return;
     }
     setStatus(edit === "new" ? "Film created." : "Film saved.");

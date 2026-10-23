@@ -11,6 +11,7 @@ const MAX_PLAY_MS = 90_000; // ponytail: a trailer that never reports its end st
 export function HeroTrailer({ trailer, onEnded }: { trailer: TrailerResponse; onEnded: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
+  const playerOrigin = new URL(trailer.embedUrl).origin; // messages are only trusted from, and sent to, the player's own origin
 
   useEffect(() => {
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
@@ -22,7 +23,7 @@ export function HeroTrailer({ trailer, onEnded }: { trailer: TrailerResponse; on
   useEffect(() => {
     const timer = window.setTimeout(onEnded, MAX_PLAY_MS);
     function onMessage(event: MessageEvent) {
-      if (event.source !== frame.current?.contentWindow) return;
+      if (event.origin !== playerOrigin || event.source !== frame.current?.contentWindow) return;
       try {
         const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         const ended = trailer.site === "Vimeo" ? data?.event === "finish" : data?.event === "onStateChange" && data?.info === 0;
@@ -36,13 +37,13 @@ export function HeroTrailer({ trailer, onEnded }: { trailer: TrailerResponse; on
       window.clearTimeout(timer);
       window.removeEventListener("message", onMessage);
     };
-  }, [trailer.site, onEnded]);
+  }, [trailer.site, playerOrigin, onEnded]);
 
   function subscribe() {
     const target = frame.current?.contentWindow;
     if (!target) return;
-    if (trailer.site === "Vimeo") target.postMessage(JSON.stringify({ method: "addEventListener", value: "finish" }), "*");
-    else target.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*");
+    if (trailer.site === "Vimeo") target.postMessage(JSON.stringify({ method: "addEventListener", value: "finish" }), playerOrigin);
+    else target.postMessage(JSON.stringify({ event: "listening", id: 1 }), playerOrigin);
   }
 
   if (!ready) return null;

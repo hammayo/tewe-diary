@@ -27,7 +27,7 @@ dotnet sonarscanner begin \
   /d:sonar.token="$SONAR_TOKEN" \
   /d:sonar.host.url="https://sonarcloud.io" \
   /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-  /d:sonar.coverage.exclusions="backend/tests/**,backend/tools/**" \
+  /d:sonar.coverage.exclusions="backend/tests/**,backend/tools/**,frontend/**" \
   /d:sonar.exclusions="scripts/**"
 
 dotnet build backend/TeweDiary.sln --no-incremental

@@ -28,7 +28,7 @@ export function MovieModal({ slug, onClose }: { slug: string; onClose: () => voi
             canDelete={claims.canDelete}
             onOpenMovie={(next) => {
               onClose();
-              navigate(`/movies/${next}`);
+              void navigate(`/movies/${next}`);
             }}
           />
         )}

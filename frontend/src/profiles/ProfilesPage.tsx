@@ -39,7 +39,7 @@ export function ProfilesPage() {
     setError(null);
     try {
       await choose(tile.profile);
-      navigate(from, { replace: true });
+      void navigate(from, { replace: true });
     } catch (e) {
       setError(e);
     }
