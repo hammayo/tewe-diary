@@ -67,6 +67,7 @@ Full setup, config, ports, and a token-and-create-a-movie `curl` walkthrough are
 | Doc                                                   | What's in it                                                             |
 |-------------------------------------------------------|--------------------------------------------------------------------------|
 | [Getting started](_docs/_getting-started.md)          | Prerequisites, `.env` config, ports/URLs, run, quickstart `curl`         |
+| [Frontend screens](_docs/frontend-screens.md)         | Screenshots of every screen, plus the v2 Swagger the app calls           |
 | [Architecture](_docs/architecture.md)                 | Dependency rule, layering, request pipeline, project map                 |
 | [API reference](_docs/api.md)                         | Endpoints, authorization tiers, query params, error contract, versioning |
 | [Design decisions & notes](_docs/design-decisions.md) | The deliberate trade-offs and when to revisit them                       |
