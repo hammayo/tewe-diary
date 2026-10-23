@@ -140,6 +140,9 @@ public static class ApiServiceCollectionExtensions
     {
         services.AddControllers();
 
+        // Minimal API binding failures must reach an exception handler to get v1's 400 body.
+        services.Configure<RouteHandlerOptions>(x => x.ThrowOnBadRequest = true);
+        services.AddExceptionHandler<BadRequestExceptionHandler>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
@@ -153,7 +156,7 @@ public static class ApiServiceCollectionExtensions
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            options.KnownNetworks.Clear();
+            options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
         });
 

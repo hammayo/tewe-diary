@@ -13,6 +13,12 @@ dotnet test backend/TeweDiary.sln
   the data layer is exercised, not mocked. **Docker must be running.**
 - **Identity tests** (`Identity.Api.Tests`) verify token issuance end to end using a
   `WebApplicationFactory`.
+- **Guard tests** keep cross-file facts in step: `DotNetVersionTests` fails when the .NET version in
+  `Directory.Build.props`, `global.json` and the Dockerfiles disagree.
+- **Parity tests** keep v2 equal to v1. `V1V2ParityTests` sends the same request to both versions (unknown ids,
+  malformed bodies, wrong roles) and compares the status, content type and body shape;
+  `V1V2CacheTests` checks that writes and signed-in reads behave the same through either version; `*V2*Tests` are the
+  v2 twins of the v1 endpoint tests; `SwaggerV2Tests` checks both Swagger documents and the UI's version list.
 - Shared helpers (`Movies.Tests.Shared`) provide the Postgres fixture, deterministic
   `Bogus` test data, and JWT helpers.
 
@@ -30,6 +36,7 @@ The TMDB NDJSON transform has a dependency-free golden-file check:
 ```bash
 bash scripts/tests/test_tmdb_transform.sh
 bash scripts/tests/test_tmdb_details_transform.sh   # details enrichment: credit trimming + trailer selection
+bash scripts/tests/test_reset_data_args.sh          # reset-data.sh rejects bad --pages / --no-fetch options before wiping anything
 ```
 
 It runs `scripts/helpers/tmdb-to-ndjson.jq` over a sample TMDB response and diffs the

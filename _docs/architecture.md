@@ -83,7 +83,9 @@ pinned in `global.json`. CI reads the SDK from `global.json`; the Dockerfiles ta
 `DotNetVersionTests` fails if one of them is missed.
 
 v2 is a set of Minimal API endpoints inside `Movies.Api` (`Endpoints/V2/`), running beside the v1 controllers on the
-same host, auth, versioning and output cache. It currently has one read endpoint to prove the wiring.
+same host, auth, versioning and output cache. It mirrors eight of the nine v1 endpoints (the admin cache evict stays v1-only): one class per endpoint in
+`Movies/` and `Ratings/`, mapped by `MapApiEndpoints()` behind one shared `ApiVersionSet`. Each handler calls the same
+service method as its controller, so v1 and v2 share the contracts, policies and cache tag.
 
 Supporting folders: `scripts/` (dev/ops shell scripts + SQL/jq helpers under
 `scripts/helpers/`), `backend/tools/Postman/` (Postman collection + environment),

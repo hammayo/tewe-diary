@@ -86,8 +86,10 @@ printf '                                           duplicates across files are c
 printf '    Or, for movies already in the db (fetches, then loads):\n'
 printf '       scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)\n'
 printf '    Start over (deletes every movie and rating, asks first):\n'
-printf '       scripts/reset-data.sh [--volume] [--reload]   wipe the data (--volume: the db volume too;\n'
-printf '                                                     --reload: then fetch + load fresh TMDB data)\n'
+printf '       scripts/reset-data.sh [--volume] [--reload | --pages N | --no-fetch]   wipe the data (--volume: the db\n'
+printf '                                                     volume too; --reload: then fetch 500 pages + load, slow;\n'
+printf '                                                     --pages N: fetch only N pages; --no-fetch: reload the\n'
+printf '                                                     data/*.ndjson already on disk, no TMDB calls)\n'
 
 if [[ -n "$movies" ]]; then
   if [[ "$movies" -eq 0 ]]; then

@@ -1,6 +1,6 @@
 # Tewe Diary
 
-A production-shaped .NET 9 REST API for movies and ratings. It is a portfolio piece: the engineering decisions are the point, not feature count. `mission-critical` copies this repo's conventions, so changes here set the pattern for both.
+A production-shaped .NET 10 REST API for movies and ratings. It is a portfolio piece: the engineering decisions are the point, not feature count. `mission-critical` copies this repo's conventions, so changes here set the pattern for both.
 
 ## Where to look
 
@@ -53,5 +53,14 @@ cp .env.example .env
 bash scripts/stack-up.sh
 dotnet test backend/TeweDiary.sln
 ```
+
+Local data (the stack starts empty; `scripts/reset-data.sh` asks before it wipes):
+
+```bash
+bash scripts/reset-data.sh --volume --reload --pages 50   # clean start, about 1,000 movies fetched from TMDB
+bash scripts/reset-data.sh --no-fetch                      # wipe, then reload the data/*.ndjson already on disk (no TMDB calls)
+```
+
+Plain `--reload` fetches 500 pages (about 10,000 movies) and is slow; `--pages N` caps it. Details: `_docs/tmdb-import.md`.
 
 CI and deployment: `_docs/ci-cd.md`. SonarCloud analysis: `.github/workflows/sonarcloud.yml` (setup in `_docs/_getting-started.md`).

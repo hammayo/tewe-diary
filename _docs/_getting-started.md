@@ -4,7 +4,7 @@ Clone ─→ configure ─→ run ─→ call it, in a few minutes.
 
 ## Prerequisites
 
-- **.NET 9 SDK**
+- **.NET 10 SDK**
 - **Docker** (Desktop or engine) — the stack and the integration tests use it
 - **`jq`** — used by the TMDB fetch/transform scripts
 - A **TMDB API key** (only needed to regenerate data) — https://www.themoviedb.org/settings/api
@@ -39,7 +39,7 @@ is kept comment-free):
 
 ## Run
 
-**Full stack (Movies API + Identity + Postgres):**
+**Full stack (Movies API + Identity + Frontend shell + Postgres):**
 - Rider: run the `Full Stack` or `Docker Stack` configuration under `.run/`.
 - Shell: `bash scripts/stack-up.sh` builds and starts the stack detached, then prints the URLs and a
   **Movies data** summary:

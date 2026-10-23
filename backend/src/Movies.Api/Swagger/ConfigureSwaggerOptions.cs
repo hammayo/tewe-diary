@@ -25,7 +25,7 @@ public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
                 new OpenApiInfo
                 {
                     Title = _environment.ApplicationName,
-                    Description = "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+                    Description = "Movie data is imported from TMDB ahead of time and served from our local database, so it is not real-time; these endpoints do not call the TMDB API directly.",
                     Version = description.ApiVersion.ToString(),
                 });
         }

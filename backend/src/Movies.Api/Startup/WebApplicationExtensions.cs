@@ -19,13 +19,6 @@ public static class WebApplicationExtensions
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI(x =>
-            {
-                foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
-                {
-                    x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
-                }
-            });
         }
 
         app.MapHealthChecks("_health");
@@ -39,7 +32,23 @@ public static class WebApplicationExtensions
 
         app.UseMiddleware<ValidationMappingMiddleware>();
         app.MapControllers();
-        app.MapMoviesV2();
+        app.MapApiEndpoints();
+
+        // After every endpoint is mapped: the version list is read here, so an earlier call would
+        // only see the controllers (v1) and the UI would never offer the Minimal API version (v2).
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwaggerUI(x =>
+            {
+                // Colours the API version badge next to the title (the first <small>; the second, with
+                // .version-stamp, is "OAS 3.0"), so the version needs no repeat in the description.
+                x.HeadContent = "<style>.swagger-ui .info .title small:not(.version-stamp) { background: #4b0082; }</style>";
+                foreach (var groupName in app.DescribeApiVersions().Select(d => d.GroupName))
+                {
+                    x.SwaggerEndpoint($"/swagger/{groupName}/swagger.json", groupName);
+                }
+            });
+        }
 
         return app;
     }

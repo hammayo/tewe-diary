@@ -19,6 +19,7 @@ them. Lightweight ADR style: **decision → rationale → revisit when**.
 12. [Getting to $0 (free-tier options and limitations)](#12-getting-to-0-free-tier-options-and-limitations)
 13. [Deployment gotchas fixed (ACR pull, DB grants, KV propagation)](#13-deployment-gotchas-fixed-acr-pull-db-grants-kv-propagation)
 14. [HATEOAS: self links only, absolute, generated from routes](#14-hateoas-self-links-only-absolute-generated-from-routes)
+15. [v2 as Minimal APIs inside Movies.Api, and one place for the .NET version](#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)
 
 ## 1. One `Movies.Application` project, not separate Domain/Application/Infrastructure
 
@@ -94,7 +95,7 @@ by tying eviction to writes rather than short TTL guesses.
 **Decision.** Routes are `/api/v{version}` via `Asp.Versioning`, defaulting to v1, with
 versions reported in a response header and one Swagger doc per version.
 
-**Rationale.** Lets a v2 surface (planned as Minimal APIs, in a feature branch) run beside
+**Rationale.** Lets the v2 surface (Minimal APIs, see [decision 15](#15-v2-as-minimal-apis-inside-moviesapi-and-one-place-for-the-net-version)) run beside
 v1 without breaking existing clients.
 
 ## 9. Integration tests hit a real Postgres
@@ -241,3 +242,44 @@ included, if routes ever change.
 on the caller's claims, and advertising them unconditionally would be misleading. Both are easy to add:
 `PagedResponse<T>` would extend `HalResponse` for page links, and `MovieLinkBuilder` would gain the
 action links.
+
+## 15. v2 as Minimal APIs inside Movies.Api, and one place for the .NET version
+
+**Decision.** The v2 surface is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, mapped beside the v1
+controllers on the same host. It shares auth, versioning, output caching, validation and DI, and v1 and v2 call the
+same service methods (for example `IMovieService.GetByIdOrSlugAsync`). The .NET version is set in
+`backend/Directory.Build.props`, pinned in the root `global.json` and passed to the Dockerfiles as
+`DOTNET_VERSION`; `DotNetVersionTests` fails if they disagree. The React app lives in `frontend/`, beside
+`backend/`, and builds on its own.
+
+v2 mirrors eight of the nine v1 endpoints (not the admin cache evict, which only the deploy pipeline calls, on v1) with the same request and response shapes, in the layout of the
+course's Minimal API chapter: one static class per endpoint, area aggregators, and a single `ApiVersionSet` built in
+`MapApiEndpoints()`. Errors match v1 on purpose. `[ApiController]` gives v1 a `ProblemDetails` body on `404` and on
+binding failures, so v2 returns the same through `V2Problems.NotFound()` and `BadRequestExceptionHandler`
+(`RouteHandlerOptions.ThrowOnBadRequest`). Route
+names carry the version (`GetMovieV2`), and `MovieLinkBuilder` builds `self` links for whichever version is served.
+`V1V2ParityTests` sends the same request to both versions and compares the answers.
+
+**Rationale.** A separate v2 project would duplicate the startup and cross-cutting code for no gain while both
+versions deploy together. Docker cannot read the props file or `global.json`, so the test is the cheapest link between
+the three places.
+
+**Revisit when** the parked browse design (cards, genre filter, search) makes v2 differ from v1, or v2 has to deploy or scale separately (then split it into its own host), or when the framework version
+is bumped (change the three places and let the test confirm it).
+
+## 16. .NET 10, Swashbuckle 9 and a pinned transitive package
+
+**Decision.** The solution targets .NET 10, the current LTS. .NET 9 reaches the end of its support on 10 November 2026.
+Two choices came with the move:
+
+- `Swashbuckle.AspNetCore` stays on 9.0.6, which uses Microsoft.OpenApi 1.x. I removed the unused
+  `Microsoft.AspNetCore.OpenApi` reference, because its 10.x package brings Microsoft.OpenApi 2.x and would clash.
+- `System.Security.Cryptography.Pkcs` is pinned to 10.0.13 in `Directory.Packages.props`
+  (`CentralPackageTransitivePinningEnabled`). `FluentMigrator.Runner` pulls in 9.0.0 through `Microsoft.Data.SqlClient`,
+  and the .NET 10 SDK audits transitive packages, so it warns about that version's advisories.
+
+**Rationale.** Swashbuckle 10 moves to Microsoft.OpenApi 2.x, whose types differ from the ones used in
+`ConfigureSwaggerOptions`, `SwaggerDefaultValues`, `Identity.Api` and one test. That is a change of its own and gives the
+upgrade nothing. A central pin clears the warning without suppressing it and without a new package reference.
+
+**Revisit when** I move to Swashbuckle 10, or when FluentMigrator updates its SQL Server dependency (then drop the pin).

@@ -2,12 +2,12 @@
 
 ## Running locally with Docker Compose
 
-The whole stack (Postgres + Identity.Api + Movies.Api) runs from `docker-compose.yml`:
+The whole stack (Postgres + Identity.Api + Movies.Api + the frontend shell) runs from `docker-compose.yml`:
 
 ```bash
 cp .env.example .env      # first time: fill in real values (or keep the local defaults)
 ./run.sh                  # or: docker compose up --build  (foreground; Ctrl+C stops)
-docker compose ps         # all three should report (healthy)
+docker compose ps         # db, identity-api and movies-api should report (healthy)
 docker compose down       # stop and remove
 ```
 
@@ -22,10 +22,11 @@ Compose serves over **HTTP** (host port → container port `8080`):
 |----------------|--------------------------|-------------------------------|-------------------------------|--------------------------------------------|
 | Movies.Api     | http://localhost:5001    | http://localhost:5001/swagger | http://localhost:5001/_health | Movie/rating API; JWT-protected writes     |
 | Identity.Api   | http://localhost:5003    | http://localhost:5003/swagger | http://localhost:5003/_health | JWT issuer; `POST /token`                  |
+| Frontend       | http://localhost:5173    | —                             | —                             | Placeholder React shell (nginx)            |
 | Postgres (db)  | localhost:5432           | —                             | (compose healthcheck)         | `postgres:latest`; credentials from `.env` |
 
 Movies migrates the database on boot (`Database__MigrateOnStartup=true`) and reaches Postgres
-over the compose network. Every service has a health check, so `docker compose ps` shows when
+over the compose network. The database and both APIs have health checks (the frontend shell does not), so `docker compose ps` shows when
 each dependency is up; `movies-api` only reports healthy once it can reach the database.
 
 Get a token and call a protected endpoint:
@@ -33,7 +34,7 @@ Get a token and call a protected endpoint:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:5003/token -H 'Content-Type: application/json' \
   -d '{"userId":"11111111-1111-1111-1111-111111111111","email":"dev@example.com","customClaims":{"trusted_member":true}}')
-curl -X POST http://localhost:5001/api/movies -H "Authorization: Bearer $TOKEN" \
+curl -X POST http://localhost:5001/api/v1/movies -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"title":"Example","yearOfRelease":2024,"genres":["Drama"]}'
 ```
 
@@ -52,6 +53,14 @@ Flexible Server.
   to minimise the brief new-schema/old-image window during restart.
 - **`import.yml`** — manual only: fetches from TMDB, runs the idempotent upsert import as the
   least-privilege `movies_importer` role, then evicts the API's `movies` cache.
+
+## Other workflows
+
+- **`frontend.yml`** — on changes to `frontend/**`: installs with `npm ci --ignore-scripts` and builds the
+  React app. `deploy.yml` and `sonarcloud.yml` ignore `frontend/**`.
+- **`sonarcloud.yml`** — on push to `main` and on pull requests: builds, tests with coverage and sends the
+  analysis to SonarCloud.
+- Every .NET workflow reads the SDK version from the root `global.json`.
 
 ## Database networking
 
