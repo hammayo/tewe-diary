@@ -4,7 +4,7 @@ Clone ─→ configure ─→ run ─→ call it, in a few minutes.
 
 ## Prerequisites
 
-- **.NET 9 SDK**
+- **.NET 10 SDK**
 - **Docker** (Desktop or engine) — the stack and the integration tests use it
 - **`jq`** — used by the TMDB fetch/transform scripts
 - A **TMDB API key** (only needed to regenerate data) — https://www.themoviedb.org/settings/api

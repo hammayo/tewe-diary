@@ -2,7 +2,6 @@
 
     <ItemGroup>
         <PackageReference Include="DotNetEnv" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
     </ItemGroup>

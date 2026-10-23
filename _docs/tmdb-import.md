@@ -56,7 +56,7 @@ bash scripts/load-movies.sh [files...]     # 2. load every data/*.ndjson (or jus
                                            #    showing step progress, the import summary and details coverage
 bash scripts/enrich-movies.sh [--all]      # shortcut for movies already in the db: fetch details for those missing them,
                                            #    then load (--all: refresh every one)
-bash scripts/reset-data.sh [--volume] [--reload]   # start fresh: delete every movie and rating (asks first)
+bash scripts/reset-data.sh [--volume] [--reload | --pages N | --no-fetch]   # start fresh: delete every movie and rating (asks first)
 # or, via the CLI tool:
 dotnet run --project backend/tools/Movies.DbTool -- import data/*.ndjson
 # schema migrations (same CLI):
@@ -281,8 +281,10 @@ prints a new line every 30s (scripts) or every 10% (DbTool).
         Or, for movies already in the db (fetches, then loads):
            scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)
         Start over (deletes every movie and rating, asks first):
-           scripts/reset-data.sh [--volume] [--reload]   wipe the data (--volume: the db volume too;
-                                                         --reload: then fetch + load fresh TMDB data)
+           scripts/reset-data.sh [--volume] [--reload | --pages N | --no-fetch]   wipe the data (--volume: the db
+                                                         volume too; --reload: then fetch 500 pages + load, slow;
+                                                         --pages N: fetch only N pages; --no-fetch: reload the
+                                                         data/*.ndjson already on disk, no TMDB calls)
 
 ## Behaviour notes
 
@@ -319,9 +321,17 @@ asks you to type `wipe`, and has no undo. The schema stays with the migrations.
 
     scripts/reset-data.sh                    # empty the data tables (container and schema kept)
     scripts/reset-data.sh --volume           # also delete the Postgres volume, then restart the stack
-    scripts/reset-data.sh --reload           # after wiping: fetch fresh TMDB data and load it
+    scripts/reset-data.sh --reload           # after wiping: fetch the newest releases (500 pages, slow) and load
+    scripts/reset-data.sh --reload --pages 50   # the same, but only 50 pages (about 1,000 movies); --pages implies --reload
+    scripts/reset-data.sh --no-fetch         # after wiping: load the data/*.ndjson already on disk, no TMDB calls
     scripts/reset-data.sh --volume --reload  # the full clean start
     scripts/reset-data.sh --yes ...          # skip the prompt (scripting)
+
+**Why `--reload` is slow.** It fetches the newest releases fresh every time: 500 list requests one after another (20
+movies a page, TMDB's maximum), then one details request per movie (about 10,000, eight at a time), then the load. The
+time is TMDB's, not Docker's or the API's. `--pages N` shortens the fetch, and `--no-fetch` skips it and reloads what
+is already in `data/` (a few seconds). `--pages` and `--no-fetch` cannot be combined, and `--no-fetch` stops before
+wiping anything if `data/` has no `.ndjson` files.
 
 `--volume` is the only option that also clears anything left by migrations or added by hand outside
 the data tables. Without it, one `truncate movies cascade` empties every dependent table, which is

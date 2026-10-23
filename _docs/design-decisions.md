@@ -266,3 +266,20 @@ the three places.
 
 **Revisit when** the parked browse design (cards, genre filter, search) makes v2 differ from v1, or v2 has to deploy or scale separately (then split it into its own host), or when the framework version
 is bumped (change the three places and let the test confirm it).
+
+## 16. .NET 10, Swashbuckle 9 and a pinned transitive package
+
+**Decision.** The solution targets .NET 10, the current LTS. .NET 9 reaches the end of its support on 10 November 2026.
+Two choices came with the move:
+
+- `Swashbuckle.AspNetCore` stays on 9.0.6, which uses Microsoft.OpenApi 1.x. I removed the unused
+  `Microsoft.AspNetCore.OpenApi` reference, because its 10.x package brings Microsoft.OpenApi 2.x and would clash.
+- `System.Security.Cryptography.Pkcs` is pinned to 10.0.13 in `Directory.Packages.props`
+  (`CentralPackageTransitivePinningEnabled`). `FluentMigrator.Runner` pulls in 9.0.0 through `Microsoft.Data.SqlClient`,
+  and the .NET 10 SDK audits transitive packages, so it warns about that version's advisories.
+
+**Rationale.** Swashbuckle 10 moves to Microsoft.OpenApi 2.x, whose types differ from the ones used in
+`ConfigureSwaggerOptions`, `SwaggerDefaultValues`, `Identity.Api` and one test. That is a change of its own and gives the
+upgrade nothing. A central pin clears the warning without suppressing it and without a new package reference.
+
+**Revisit when** I move to Swashbuckle 10, or when FluentMigrator updates its SQL Server dependency (then drop the pin).

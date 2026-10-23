@@ -2,13 +2,13 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hammayo_tewe-diary&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hammayo_tewe-diary)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/hammayo/tewe-diary/deploy.yml?branch=main&label=deploy&logo=githubactions&logoColor=white)](https://github.com/hammayo/tewe-diary/actions/workflows/deploy.yml)
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Azure](https://img.shields.io/badge/Azure-App%20Service-0078D4?logo=microsoftazure&logoColor=white)](_docs/azure-deployment.md)
 
 A movie diary API: browse around 10,000 films imported from TMDB, rate the ones
-you've seen and get your ratings back. I built it in .NET 9 as a portfolio piece,
+you've seen and get your ratings back. I built it in .NET 10 as a portfolio piece,
 so the films are the excuse and the engineering is the point.
 
 It's production-shaped rather than feature-heavy. A separate Identity service issues
@@ -82,10 +82,6 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **Upgrade to the latest .NET** (.NET 10, the current LTS, supported until November 2028). .NET 9 reaches the end of its
-  support on 10 November 2026 ([Microsoft's announcement](https://devblogs.microsoft.com/dotnet/dotnet-8-9-end-of-support/)),
-  so I'll move the target framework in `backend/Directory.Build.props` and the `DOTNET_VERSION` build argument in the
-  backend Dockerfiles, then update the packages in `backend/Directory.Packages.props` to match.
 - **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:
