@@ -21,7 +21,8 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:alpine AS final
 # The nginx image fills ${...} in templates from the environment at start-up (compose overrides these).
 ENV MOVIES_UPSTREAM=http://movies-api:8080 \
-    IDENTITY_UPSTREAM=http://identity-api:8080
+    IDENTITY_UPSTREAM=http://identity-api:8080 \
+    HERO_SLUGS=
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

@@ -96,6 +96,7 @@ services:
     environment:
       - MOVIES_UPSTREAM=http://movies-api:8080
       - IDENTITY_UPSTREAM=http://identity-api:8080
+      - HERO_SLUGS=${HERO_SLUGS:-}
     ports:
       - '5173:8080'
 
@@ -112,6 +113,7 @@ services:
     environment:
       - MOVIES_UPSTREAM=http://movies-api:8080
       - IDENTITY_UPSTREAM=http://identity-api:8080
+      - HERO_SLUGS=${HERO_SLUGS:-}
     ports:
       - '5174:5173'
     volumes:

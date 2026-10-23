@@ -10,7 +10,7 @@ interface AuthValue {
   /** Choose a profile, or `null` to browse anonymously. Clears every cached query. */
   choose(profile: DemoProfile | null): Promise<void>;
   signedOutNotice: string | null;
-  /** False until a profile (or "Browse without a profile") has been chosen in this page load. */
+  /** False until a profile (or "Anonymous") has been chosen in this page load. */
   chosen: boolean;
 }
 

@@ -67,10 +67,12 @@ docker compose run --rm --build frontend-test            # lint, typecheck and u
   outside compose `npm run dev` falls back to `http://localhost:5001` and `http://localhost:5003`). The proxy adds
   `X-Forwarded-Proto: https`, because the APIs redirect plain HTTP to HTTPS otherwise.
 - **Profiles.** The first screen asks "Who's watching?". Member, Trusted and Admin ask Identity.Api for a token with that
-  tier's claims, and "Browse without a profile" stays anonymous. This is a demo identity, not authentication: anyone can
+  tier's claims, and "Anonymous" stays anonymous. This is a demo identity, not authentication: anyone can
   mint an Admin token, so do not deploy this build publicly. The token is kept in memory only, so a reload asks again.
-- **Hero list.** The five featured films are the slugs in `frontend/src/home/heroSlugs.ts`. A slug missing from the data,
-  or a film with neither trailer nor backdrop, is skipped and topped up with the newest releases.
+- **Hero list.** The featured films (up to five) are the comma-separated slugs in `HERO_SLUGS` in `.env`. nginx serves
+  them at `/config.json`, so changing them needs only `docker compose up -d frontend`, not a rebuild. A slug missing from
+  the data, or a film with neither trailer nor backdrop, is skipped and topped up with the newest releases; empty means
+  newest releases only.
 - **Dev container.** After a dependency change run `docker compose --profile dev up -d --build --renew-anon-volumes
   frontend-dev`, because `node_modules` lives in a volume.
 - **npm.** `frontend/.npmrc` sets `legacy-peer-deps`: npm 10 fails to resolve the peer set when Vitest is installed

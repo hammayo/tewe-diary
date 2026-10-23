@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Crown, Eye, ShieldCheck, User, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ApiErrorPanel } from "@/shell/ApiErrorPanel";
@@ -16,9 +16,11 @@ interface Tile {
   profile: DemoProfile | null;
 }
 
+const profileIcons: Record<DemoProfile["id"], LucideIcon> = { member: User, trusted: ShieldCheck, admin: Crown };
+
 const tiles: Tile[] = [
   ...profiles.map((p) => ({ key: p.id, label: p.label, blurb: p.blurb, profile: p })),
-  { key: "anonymous", label: "Browse without a profile", blurb: "Anonymous: browse, search, trailers", profile: null },
+  { key: "anonymous", label: "Anonymous", blurb: "Browse, search, trailers", profile: null },
 ];
 
 export function ProfilesPage() {
@@ -76,7 +78,7 @@ export function ProfilesPage() {
                     tile.profile ? tile.profile.tone : "border-2 border-dashed border-subtle",
                   )}
                 >
-                  {tile.profile ? <Smile /> : <Eye className="size-12 text-subtle" aria-hidden="true" />}
+                  {tile.profile ? <ProfileIcon id={tile.profile.id} /> : <Eye className="size-12 text-subtle" aria-hidden="true" />}
                 </span>
                 <span className={cn("text-lg font-semibold", focused === i ? "text-white" : "text-muted")}>{tile.label}</span>
                 <span className="text-sm text-muted">{tile.blurb}</span>
@@ -100,12 +102,7 @@ export function ProfilesPage() {
   );
 }
 
-function Smile() {
-  return (
-    <svg viewBox="0 0 48 48" className="size-14 text-white" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-      <circle cx="16" cy="18" r="2.5" fill="currentColor" stroke="none" />
-      <circle cx="32" cy="18" r="2.5" fill="currentColor" stroke="none" />
-      <path d="M13 30c3 5 19 5 22 0" />
-    </svg>
-  );
+function ProfileIcon({ id }: { id: DemoProfile["id"] }) {
+  const Icon = profileIcons[id];
+  return <Icon className="size-14 text-white" aria-hidden="true" />;
 }

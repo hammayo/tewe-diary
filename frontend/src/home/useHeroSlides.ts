@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMovie, fetchMovies } from "@/api/queries";
 import type { MovieResponse, TrailerResponse } from "@/api/types";
-import { heroSlugs } from "./heroSlugs";
 
 const MAX_SLIDES = 5;
 const DETAIL_STALE_MS = 60_000; // the API caches a movie for 60 s
@@ -32,7 +31,18 @@ function toSlide(movie: MovieResponse): HeroSlide | null {
   };
 }
 
-/** Hand-picked slides first, topped up with the newest releases (D11). One detail request per slide. */
+/** Slugs from the runtime config (/config.json, set by HERO_SLUGS). Any failure means "none": newest releases fill in. */
+async function configuredSlugs(): Promise<string[]> {
+  try {
+    const response = await fetch("/config.json");
+    const { heroSlugs } = (await response.json()) as { heroSlugs?: string };
+    return (heroSlugs ?? "").split(",").map((slug) => slug.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Configured slides first, topped up with the newest releases (D11). One detail request per slide. */
 export function useHeroSlides() {
   const client = useQueryClient();
   const detail = (slug: string) =>
@@ -43,7 +53,7 @@ export function useHeroSlides() {
   return useQuery({
     queryKey: ["hero-slides"],
     queryFn: async (): Promise<HeroSlide[]> => {
-      const slides = (await Promise.all(heroSlugs.slice(0, MAX_SLIDES).map(detail)))
+      const slides = (await Promise.all((await configuredSlugs()).slice(0, MAX_SLIDES).map(detail)))
         .map((movie) => (movie ? toSlide(movie) : null))
         .filter((slide): slide is HeroSlide => slide !== null);
 

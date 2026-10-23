@@ -27,7 +27,7 @@ export const profiles: DemoProfile[] = [
     userId: "6f1c2a40-5b0e-4c1a-9a53-0d7a1f4b2c02",
     email: "trusted@tewe.dev",
     claims: { trusted_member: true },
-    blurb: "Plus create and edit on Manage",
+    blurb: "Plus Manage",
     tone: "bg-[#2e7d4f]",
   },
   {

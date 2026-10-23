@@ -19,6 +19,7 @@ const SORTS = [
   { value: "yearofrelease", label: "Year, oldest first" },
 ];
 const DEBOUNCE_MS = 300;
+const CURRENT_YEAR = new Date().getFullYear(); // the list shows this year's films until the user searches
 
 function setOrDelete(params: URLSearchParams, key: string, value: string | null) {
   if (value) params.set(key, value);
@@ -78,7 +79,8 @@ export function BrowsePage() {
     });
   }
 
-  const yearNumber = urlYear && /^\d+$/.test(urlYear) ? Number(urlYear) : undefined;
+  const showingLatest = urlTitle === "" && urlYear === ""; // nothing searched: show the current year's films
+  const yearNumber = showingLatest ? CURRENT_YEAR : urlYear && /^\d+$/.test(urlYear) ? Number(urlYear) : undefined;
   const query = useMoviePage({ title: urlTitle || undefined, year: yearNumber, sortBy, page });
   const movies = query.data?.items ?? [];
 
@@ -154,7 +156,9 @@ export function BrowsePage() {
       {yearError && <p id="year-error" role="alert" className="mt-2 text-sm text-red-400">{yearError}</p>}
 
       <p className="mt-6 text-sm text-muted" aria-live="polite">
-        {query.data ? `${query.data.total.toLocaleString()} films` : " "}
+        {query.data
+          ? `${query.data.total.toLocaleString()} ${showingLatest ? `latest films from ${CURRENT_YEAR}` : "films"}`
+          : "\u00a0"}
       </p>
 
       {query.isPending ? (
