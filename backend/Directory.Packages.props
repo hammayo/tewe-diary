@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,6 +33,8 @@
         <PackageVersion Include="Refit" Version="10.2.0" />
         <PackageVersion Include="Refit.HttpClientFactory" Version="10.2.0" />
         <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+        <!-- Pinned transitively: FluentMigrator.Runner -> Microsoft.Data.SqlClient pulls in 9.0.0, which has known advisories. -->
+        <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
         <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
         <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
         <PackageVersion Include="xunit" Version="2.9.3" />

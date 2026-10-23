@@ -65,8 +65,8 @@ until November 2028.
 | FR-5   | Images and stack           | `bash scripts/stack-up.sh` builds both images on `10.0`. Both APIs report healthy, Swagger offers 1.0 and 2.0, a migration run succeeds, and the same request to v1 and v2 returns matching bodies           | Todo   |
 | FR-6   | CI and SonarCloud          | The workflows resolve the .NET 10 SDK from `global.json`, the SonarCloud scanner supports it, and the PR's checks are green                                                                                  | Todo   |
 | FR-7   | Docs                       | No file names .NET 9 as the current target (history excepted): `README.md` (badge and text), `CLAUDE.md`, `_docs/_getting-started.md` and any other doc found by search. The README roadmap item is removed  | Todo   |
-| FR-8   | Obsolete API               | `ForwardedHeadersOptions.KnownNetworks` (obsolete in ASP.NET Core 10, `ASPDEPR005`) becomes `KnownIPNetworks`, with the same behaviour: the allow-list is still cleared                                      | Todo   |
-| FR-9   | Vulnerability warnings     | The build has no `NU1902` or `NU1903` warning. `System.Security.Cryptography.Pkcs` is pinned centrally (D8) and `dotnet list package --vulnerable --include-transitive` is empty                             | Todo   |
+| FR-8   | Obsolete API               | `ForwardedHeadersOptions.KnownNetworks` (obsolete in ASP.NET Core 10, `ASPDEPR005`) becomes `KnownIPNetworks`, with the same behaviour: the allow-list is still cleared                                      | Done   |
+| FR-9   | Vulnerability warnings     | The build has no `NU1902` or `NU1903` warning. `System.Security.Cryptography.Pkcs` is pinned centrally (D8) and `dotnet list package --vulnerable --include-transitive` is empty                             | Done   |
 
 ## 7. Non-functional requirements
 
@@ -118,8 +118,8 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 | FR-5    | 7            | T6            | Todo    |
 | FR-6    | 5            | T7            | Todo    |
 | FR-7    | 5            | T8            | Todo    |
-| FR-8    | 5            | T4            | Todo    |
-| FR-9    | 6            | T4            | Todo    |
+| FR-8    | 5            | T4            | Done    |
+| FR-9    | 6            | T4            | Done    |
 | NFR-1   | 7            | T1, T9        | Todo    |
 | NFR-2   | 3            | T9            | Todo    |
 | NFR-3   | 7            | T1, T9        | Todo    |
