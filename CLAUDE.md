@@ -1,6 +1,6 @@
 # Tewe Diary
 
-A production-shaped .NET 9 REST API for movies and ratings. It is a portfolio piece: the engineering decisions are the point, not feature count. `mission-critical` copies this repo's conventions, so changes here set the pattern for both.
+A production-shaped .NET 10 REST API for movies and ratings. It is a portfolio piece: the engineering decisions are the point, not feature count. `mission-critical` copies this repo's conventions, so changes here set the pattern for both.
 
 ## Where to look
 

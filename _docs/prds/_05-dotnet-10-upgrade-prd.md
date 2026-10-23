@@ -61,10 +61,10 @@ until November 2028.
 | FR-1   | Toolchain                  | `Directory.Build.props` says `net10.0`, `global.json` pins SDK `10.0.100` with `latestFeature`, and both Dockerfiles use `ARG DOTNET_VERSION=10.0`. They change together, and `DotNetVersionTests` passes    | Done   |
 | FR-2   | Microsoft packages         | The nine `9.0.20` Microsoft packages in `Directory.Packages.props` are on one 10.0 patch version (D3), in the same step as FR-1 (D1)                                                                         | Done   |
 | FR-3   | Remove an unused package   | `Microsoft.AspNetCore.OpenApi` is gone from `Movies.Api`, `Identity.Api` and `Directory.Packages.props`, and the Swagger tests still pass                                                                    | Done   |
-| FR-4   | Third-party packages       | Only a package the framework change needs is moved (D6, D7). `Swashbuckle.AspNetCore` stays on 9.0.6 and design decisions say why and when to revisit                                                        | Todo   |
+| FR-4   | Third-party packages       | Only a package the framework change needs is moved (D6, D7). `Swashbuckle.AspNetCore` stays on 9.0.6 and design decisions say why and when to revisit                                                        | Done   |
 | FR-5   | Images and stack           | `bash scripts/stack-up.sh` builds both images on `10.0`. Both APIs report healthy, Swagger offers 1.0 and 2.0, a migration run succeeds, and the same request to v1 and v2 returns matching bodies           | Done   |
 | FR-6   | CI and SonarCloud          | The workflows resolve the .NET 10 SDK from `global.json`, the SonarCloud scanner supports it, and the PR's checks are green                                                                                  | Todo   |
-| FR-7   | Docs                       | No file names .NET 9 as the current target (history excepted): `README.md` (badge and text), `CLAUDE.md`, `_docs/_getting-started.md` and any other doc found by search. The README roadmap item is removed  | Todo   |
+| FR-7   | Docs                       | No file names .NET 9 as the current target (history excepted): `README.md` (badge and text), `CLAUDE.md`, `_docs/_getting-started.md` and any other doc found by search. The README roadmap item is removed  | Done   |
 | FR-8   | Obsolete API               | `ForwardedHeadersOptions.KnownNetworks` (obsolete in ASP.NET Core 10, `ASPDEPR005`) becomes `KnownIPNetworks`, with the same behaviour: the allow-list is still cleared                                      | Done   |
 | FR-9   | Vulnerability warnings     | The build has no `NU1902` or `NU1903` warning. `System.Security.Cryptography.Pkcs` is pinned centrally (D8) and `dotnet list package --vulnerable --include-transitive` is empty                             | Done   |
 
@@ -109,24 +109,24 @@ until November 2028.
 
 The plan's task statuses roll up here. Update this table whenever a plan task changes status.
 
-| Req     | SDD section  | Plan task(s)  | Status  |
-|---------|--------------|---------------|---------|
-| FR-1    | 5            | T3            | Done    |
-| FR-2    | 5            | T3            | Done    |
-| FR-3    | 5            | T2            | Done    |
-| FR-4    | 6            | T5            | Todo    |
-| FR-5    | 7            | T6            | Done    |
-| FR-6    | 5            | T7            | Todo    |
-| FR-7    | 5            | T8            | Todo    |
-| FR-8    | 5            | T4            | Done    |
-| FR-9    | 6            | T4            | Done    |
-| NFR-1   | 7            | T1, T9        | Todo    |
-| NFR-2   | 3            | T9            | Todo    |
-| NFR-3   | 7            | T1, T9        | Todo    |
-| NFR-4   | 7            | T1, T9        | Todo    |
-| NFR-5   | —            | T9            | Todo    |
-| NFR-6   | 3            | T3, T4        | Todo    |
-| NFR-7   | 8            | T9            | Todo    |
+| Req   | SDD section | Plan task(s) | Status |
+|-------|-------------|--------------|--------|
+| FR-1  | 5           | T3           | Done   |
+| FR-2  | 5           | T3           | Done   |
+| FR-3  | 5           | T2           | Done   |
+| FR-4  | 6           | T5, T8       | Done   |
+| FR-5  | 7           | T6           | Done   |
+| FR-6  | 5           | T7           | Todo   |
+| FR-7  | 5           | T8           | Done   |
+| FR-8  | 5           | T4           | Done   |
+| FR-9  | 6           | T4           | Done   |
+| NFR-1 | 7           | T1, T9       | Todo   |
+| NFR-2 | 3           | T9           | Todo   |
+| NFR-3 | 7           | T1, T9       | Todo   |
+| NFR-4 | 7           | T1, T9       | Todo   |
+| NFR-5 | —           | T9           | Todo   |
+| NFR-6 | 3           | T3, T4       | Todo   |
+| NFR-7 | 8           | T9           | Todo   |
 
 ## 12. Change log
 
