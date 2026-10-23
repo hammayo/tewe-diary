@@ -1,4 +1,4 @@
-import { Crown, Eye, ShieldCheck, User, type LucideIcon } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ApiErrorPanel } from "@/shell/ApiErrorPanel";
@@ -15,8 +15,6 @@ interface Tile {
   blurb: string;
   profile: DemoProfile | null;
 }
-
-const profileIcons: Record<DemoProfile["id"], LucideIcon> = { member: User, trusted: ShieldCheck, admin: Crown };
 
 const tiles: Tile[] = [
   ...profiles.map((p) => ({ key: p.id, label: p.label, blurb: p.blurb, profile: p })),
@@ -48,14 +46,14 @@ export function ProfilesPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <header className="safe-x py-8">
         <span className="flex items-center gap-2 font-display text-lg font-extrabold tracking-[0.14em]">
           <LogoMark className="size-6" /> TEWE DIARY
         </span>
       </header>
-      <main className="safe-x flex flex-1 flex-col items-center justify-center gap-10 text-center">
-        <h1 className="font-display text-6xl font-extrabold tracking-tight">Who's watching?</h1>
+      <main className="safe-x flex min-h-0 flex-1 flex-col items-center justify-center gap-8 pb-16 text-center">
+        <h1 className="font-display text-5xl font-extrabold tracking-tight">Who's watching?</h1>
         {signedOutNotice && <p role="status" className="text-muted">{signedOutNotice}</p>}
         <ul className="flex items-start gap-10">
           {tiles.map((tile, i) => (
@@ -78,7 +76,7 @@ export function ProfilesPage() {
                     tile.profile ? tile.profile.tone : "border-2 border-dashed border-subtle",
                   )}
                 >
-                  {tile.profile ? <ProfileIcon id={tile.profile.id} /> : <Eye className="size-12 text-subtle" aria-hidden="true" />}
+                  {tile.profile ? <tile.profile.icon className="size-14 text-white" aria-hidden="true" /> : <Eye className="size-12 text-subtle" aria-hidden="true" />}
                 </span>
                 <span className={cn("text-lg font-semibold", focused === i ? "text-white" : "text-muted")}>{tile.label}</span>
                 <span className="text-sm text-muted">{tile.blurb}</span>
@@ -86,23 +84,12 @@ export function ProfilesPage() {
             </li>
           ))}
         </ul>
-        <p aria-live="polite" className="text-muted">
-          Focused: {tiles[focused].label}. Press Enter to continue.
+        <p className="text-[16px] text-muted">
+          <strong className="text-white">Demo identity only (no auth).</strong> profiles request tokens from Identity.Api; anyone can mint an Admin token, so do not deploy publicly.
         </p>
         {error != null && <ApiErrorPanel error={error} />}
       </main>
-      <div className="safe-x flex items-end justify-between gap-8 pb-2 text-sm text-muted">
-        <p className="max-w-2xl">
-          <strong className="text-white">Demo identity, not authentication.</strong> Choosing a profile asks Identity.Api for a token
-          with that tier's claims. Anyone can mint an Admin token, so this build must not be deployed publicly.
-        </p>
-      </div>
       <Footer />
     </div>
   );
-}
-
-function ProfileIcon({ id }: { id: DemoProfile["id"] }) {
-  const Icon = profileIcons[id];
-  return <Icon className="size-14 text-white" aria-hidden="true" />;
 }

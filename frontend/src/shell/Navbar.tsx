@@ -45,7 +45,9 @@ export function Navbar() {
         </Link>
         <Link to="/profiles" className="focus-ring flex items-center gap-3 text-sm" aria-label="Switch profile">
           {profile ? (
-            <span className={cn("size-8 rounded-sm", profile.tone)} aria-hidden="true" />
+            <span className={cn("grid size-8 place-items-center rounded-sm", profile.tone)} aria-hidden="true">
+              <profile.icon className="size-5 text-white" />
+            </span>
           ) : (
             <span className="grid size-8 place-items-center rounded-sm border border-dashed border-subtle" aria-hidden="true">
               <Eye className="size-4 text-subtle" />

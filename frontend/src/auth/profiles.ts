@@ -1,3 +1,5 @@
+import { Crown, ShieldCheck, User, type LucideIcon } from "lucide-react";
+
 export interface DemoProfile {
   id: "member" | "trusted" | "admin";
   label: string;
@@ -8,6 +10,8 @@ export interface DemoProfile {
   blurb: string;
   /** Tile colour on the Who's watching screen (Tailwind background class). */
   tone: string;
+  /** Shown on the tile and in the navbar. */
+  icon: LucideIcon;
 }
 
 // D3: demo identities, not authentication. Identity.Api mints a token for any caller.
@@ -20,6 +24,7 @@ export const profiles: DemoProfile[] = [
     claims: {},
     blurb: "Rate films, My ratings",
     tone: "bg-[#215eb0]",
+    icon: User,
   },
   {
     id: "trusted",
@@ -29,6 +34,7 @@ export const profiles: DemoProfile[] = [
     claims: { trusted_member: true },
     blurb: "Plus Manage",
     tone: "bg-[#2e7d4f]",
+    icon: ShieldCheck,
   },
   {
     id: "admin",
@@ -38,5 +44,6 @@ export const profiles: DemoProfile[] = [
     claims: { admin: true },
     blurb: "Plus delete on Manage",
     tone: "bg-[#a0541a]",
+    icon: Crown,
   },
 ];
