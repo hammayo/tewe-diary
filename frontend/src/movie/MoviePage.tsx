@@ -25,7 +25,13 @@ export function MoviePage() {
       ) : query.isError ? (
         <ApiErrorPanel error={query.error} onRetry={() => void query.refetch()} />
       ) : (
-        <MovieBody movie={query.data} canEdit={claims.canManage} canDelete={claims.canDelete} focusBase={0} />
+        <MovieBody
+          movie={query.data}
+          canEdit={claims.canManage}
+          canDelete={claims.canDelete}
+          focusBase={0}
+          onOpenMovie={(next) => navigate(`/movies/${next}`)}
+        />
       )}
     </main>
   );

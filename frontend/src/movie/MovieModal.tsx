@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router";
 import { useMovie } from "@/api/queries";
 import { useAuth } from "@/auth/AuthProvider";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +10,7 @@ import { MovieBody } from "./MovieBody";
 export function MovieModal({ slug, onClose }: { slug: string; onClose: () => void }) {
   const { claims } = useAuth();
   const query = useMovie(slug);
+  const navigate = useNavigate();
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -20,7 +22,15 @@ export function MovieModal({ slug, onClose }: { slug: string; onClose: () => voi
         ) : query.isError ? (
           <ApiErrorPanel error={query.error} onRetry={() => void query.refetch()} />
         ) : (
-          <MovieBody movie={query.data} canEdit={claims.canManage} canDelete={claims.canDelete} />
+          <MovieBody
+            movie={query.data}
+            canEdit={claims.canManage}
+            canDelete={claims.canDelete}
+            onOpenMovie={(next) => {
+              onClose();
+              navigate(`/movies/${next}`);
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

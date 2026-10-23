@@ -5,6 +5,7 @@ import { useClearRating, useRateMovie } from "@/api/queries";
 import type { Credit, MovieResponse } from "@/api/types";
 import { useAuth } from "@/auth/AuthProvider";
 import { useFocusNav } from "@/focus/FocusProvider";
+import { AlsoFromYear } from "./AlsoFromYear";
 import { CastList } from "./CastList";
 import { RatingStars } from "./RatingStars";
 import { TrailerPlayer } from "./TrailerPlayer";
@@ -15,6 +16,8 @@ interface Props {
   canDelete: boolean;
   /** Focus-grid row to start registering at (the full page). Omit in the modal, where Radix owns focus. */
   focusBase?: number;
+  /** Opens a film from the "Also from" row. */
+  onOpenMovie: (slug: string) => void;
 }
 
 function names(credits: Credit[]): string {
@@ -26,7 +29,7 @@ function runtimeText(minutes: number | null | undefined): string | null {
 }
 
 /** The movie's content, shared by the page and the modal. A manual movie has `details: null` (FR-7). */
-export function MovieBody({ movie, canEdit, canDelete, focusBase }: Props) {
+export function MovieBody({ movie, canEdit, canDelete, focusBase, onOpenMovie }: Props) {
   const { claims } = useAuth();
   const { register } = useFocusNav();
   const rate = useRateMovie(movie);
@@ -140,6 +143,14 @@ export function MovieBody({ movie, canEdit, canDelete, focusBase }: Props) {
           <CastList cast={details.cast} />
         </div>
       )}
+      <div className="basis-full">
+        <AlsoFromYear
+          slug={movie.slug}
+          year={movie.yearOfRelease}
+          focusRow={focusBase === undefined ? undefined : focusBase + 2}
+          onSelect={onOpenMovie}
+        />
+      </div>
       {details?.trailer && (
         <TrailerPlayer trailer={details.trailer} title={movie.title} open={playerOpen} onClose={() => setPlayerOpen(false)} returnFocusTo={playRef} />
       )}

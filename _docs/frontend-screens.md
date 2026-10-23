@@ -38,6 +38,11 @@ Title and year filters, sorting and paging. The URL holds the state, so a search
 
 The movie page, with trailer, cast and my star rating. Opening a card from Home shows the same body in a modal.
 
+![The Also from 2016 row at the bottom of a movie page](screenshots/06b-movie-also-from.png)
+
+Under the cast, **Also from <year>** lists up to five other films from the same year that have a poster, and opens the one you
+pick. It uses the same year filter as Browse, so it needs no extra API.
+
 ## My ratings
 
 ![My ratings for the Member profile](screenshots/07-my-ratings.png)
