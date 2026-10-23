@@ -9,7 +9,10 @@
 # Usage:
 #   scripts/reset-data.sh                  # empty every data table (schema and container kept)
 #   scripts/reset-data.sh --volume         # also delete the Postgres volume, then restart the stack
-#   scripts/reset-data.sh --reload         # after wiping: fetch the newest releases, then load every data/*.ndjson
+#   scripts/reset-data.sh --reload         # after wiping: fetch the newest releases (500 pages, about 10,000
+#                                          # movies, slow), then load every data/*.ndjson
+#   scripts/reset-data.sh --reload --pages 50   # fetch only 50 pages (about 1,000 movies); implies --reload
+#   scripts/reset-data.sh --no-fetch       # reload from the data/*.ndjson already on disk, no TMDB calls
 #   scripts/reset-data.sh --volume --reload
 #   scripts/reset-data.sh --yes ...        # skip the confirmation prompt (for scripting)
 set -euo pipefail
@@ -23,15 +26,31 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 VOLUME=false
 RELOAD=false
+FETCH=true
+PAGES=""
 ASSUME_YES=false
+USAGE="Usage: scripts/reset-data.sh [--volume] [--reload] [--pages N | --no-fetch] [--yes]"
 while [ $# -gt 0 ]; do
   case "$1" in
     --volume)   VOLUME=true; shift ;;
     --reload)   RELOAD=true; shift ;;
+    --pages)    [ $# -ge 2 ] || { echo "$USAGE" >&2; exit 2; }; PAGES="$2"; RELOAD=true; shift 2 ;;
+    --no-fetch) FETCH=false; RELOAD=true; shift ;;
     -y|--yes)   ASSUME_YES=true; shift ;;
-    *) echo "Usage: scripts/reset-data.sh [--volume] [--reload] [--yes]" >&2; exit 2 ;;
+    *) echo "$USAGE" >&2; exit 2 ;;
   esac
 done
+
+# Check the options before anything is wiped. TMDB serves at most 500 pages of 20 movies.
+if [ -n "$PAGES" ]; then
+  case "$PAGES" in ''|*[!0-9]*) echo "--pages needs a whole number from 1 to 500." >&2; exit 2 ;; esac
+  { [ "$PAGES" -ge 1 ] && [ "$PAGES" -le 500 ]; } || { echo "--pages needs a whole number from 1 to 500." >&2; exit 2; }
+  [ "$FETCH" = true ] || { echo "--pages and --no-fetch cannot be combined: --no-fetch downloads nothing." >&2; exit 2; }
+fi
+if [ "$FETCH" = false ] && ! compgen -G "$REPO_ROOT/data/*.ndjson" > /dev/null; then
+  echo "--no-fetch has nothing to load: there is no data/*.ndjson. Run scripts/fetch-tmdb.sh first." >&2
+  exit 2
+fi
 
 # Refuse to run while another script is starting or resetting the stack (a second `docker compose up`
 # fails with "container name is already in use"). stack-up.sh, called below for --volume, inherits it.
@@ -46,7 +65,13 @@ else
   echo "This deletes every movie, genre, rating, metadata, details and credits row (db not reachable, so no counts)."
 fi
 $VOLUME && echo "It also deletes the Postgres volume, then restarts the stack."
-$RELOAD && echo "Afterwards it fetches the newest releases and loads every data/*.ndjson (files are kept)."
+if [ "$RELOAD" = true ]; then
+  if [ "$FETCH" = false ]; then
+    echo "Afterwards it loads every data/*.ndjson already on disk, without fetching (files are kept)."
+  else
+    echo "Afterwards it fetches the newest releases (${PAGES:-500} pages) and loads every data/*.ndjson (files are kept)."
+  fi
+fi
 echo "There is no undo."
 
 if [ "$ASSUME_YES" != true ]; then
@@ -71,7 +96,12 @@ if [ "$RELOAD" = true ]; then
   # Fetch the newest releases fresh (an existing file may predate the details fields), then load every
   # data/*.ndjson — so classics, per-year and by-id fetches from earlier come back too, not just the
   # newest set. The files themselves are never deleted by this script.
-  echo "Fetching the newest releases, then loading every data/*.ndjson..."
-  "$SCRIPT_DIR/fetch-tmdb.sh" newest
+  # --pages N caps the fetch (20 movies a page); --no-fetch skips it and reloads the files already on disk.
+  if [ "$FETCH" = true ]; then
+    echo "Fetching the newest releases, then loading every data/*.ndjson..."
+    "$SCRIPT_DIR/fetch-tmdb.sh" newest ${PAGES:+"$PAGES"}
+  else
+    echo "Loading every data/*.ndjson already on disk (no fetch)..."
+  fi
   "$SCRIPT_DIR/load-movies.sh"
 fi

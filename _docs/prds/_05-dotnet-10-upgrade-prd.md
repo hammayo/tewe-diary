@@ -2,7 +2,7 @@
 
 |              |                                                                                                         |
 |--------------|---------------------------------------------------------------------------------------------------------|
-| **Status**   | Draft — 2026-10-23 (nothing built; every requirement is `Todo`, see §10)                                |
+| **Status**   | Built and verified locally — 2026-10-23. Waiting on the PR's CI and SonarCloud checks (FR-6) and the merge (NFR-5) |
 | **Owner**    | Hammy Babar                                                                                             |
 | **Branch**   | `feature/roadmap-dotnet-10-upgrade`                                                                     |
 | **Deadline** | Before 10 November 2026, when .NET 9 reaches end of support                                             |
@@ -72,13 +72,13 @@ until November 2028.
 
 | Id      | Requirement                                                                                                                                                                                                         | Status |
 |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| NFR-1   | **No behaviour change.** `dotnet test backend/TeweDiary.sln` passes with the same tests as on .NET 9 (3 Identity, 58 Application, 137 Api). Contracts, error bodies and links are identical                         | Todo   |
-| NFR-2   | **No new moving parts.** No migration, no `appsettings.json` key, no v1 controller change, no React change, no new package reference (a transitive version pin is not one)                                          | Todo   |
-| NFR-3   | **Warnings do not rise.** The baseline is one warning (`CS8625` in `BadRequestExceptionHandlerTests`). The count on .NET 10 is no higher, and none is suppressed to get there                                       | Todo   |
-| NFR-4   | **No vulnerable packages.** The baseline lists `System.Security.Cryptography.Pkcs` 9.0.0 and two old packages in `Identity.Api`. After the upgrade `dotnet list package --vulnerable --include-transitive` is empty | Todo   |
+| NFR-1   | **No behaviour change.** `dotnet test backend/TeweDiary.sln` passes with the same tests as on .NET 9 (3 Identity, 58 Application, 137 Api). Contracts, error bodies and links are identical                         | Done   |
+| NFR-2   | **No new moving parts.** No migration, no `appsettings.json` key, no v1 controller change, no React change, no new package reference (a transitive version pin is not one)                                          | Done   |
+| NFR-3   | **Warnings do not rise.** The baseline is one warning (`CS8625` in `BadRequestExceptionHandlerTests`). The count on .NET 10 is no higher, and none is suppressed to get there                                       | Done   |
+| NFR-4   | **No vulnerable packages.** The baseline lists `System.Security.Cryptography.Pkcs` 9.0.0 and two old packages in `Identity.Api`. After the upgrade `dotnet list package --vulnerable --include-transitive` is empty | Done   |
 | NFR-5   | **On time.** The change is merged before 10 November 2026                                                                                                                                                           | Todo   |
-| NFR-6   | **Repo rules hold.** The target framework is only in `backend/Directory.Build.props`, package versions only in `backend/Directory.Packages.props`, and the dependency rule is untouched                             | Todo   |
-| NFR-7   | **Reversible.** The change is one revert. The database, the contracts and the React app are untouched, so nothing needs migrating back                                                                              | Todo   |
+| NFR-6   | **Repo rules hold.** The target framework is only in `backend/Directory.Build.props`, package versions only in `backend/Directory.Packages.props`, and the dependency rule is untouched                             | Done   |
+| NFR-7   | **Reversible.** The change is one revert. The database, the contracts and the React app are untouched, so nothing needs migrating back                                                                              | Done   |
 
 ## 8. Risks and known limitations
 
@@ -120,13 +120,13 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 | FR-7  | 5           | T8           | Done   |
 | FR-8  | 5           | T4           | Done   |
 | FR-9  | 6           | T4           | Done   |
-| NFR-1 | 7           | T1, T9       | Todo   |
-| NFR-2 | 3           | T9           | Todo   |
-| NFR-3 | 7           | T1, T9       | Todo   |
-| NFR-4 | 7           | T1, T9       | Todo   |
+| NFR-1 | 7           | T1, T9       | Done   |
+| NFR-2 | 3           | T9           | Done   |
+| NFR-3 | 7           | T1, T9       | Done   |
+| NFR-4 | 7           | T1, T9       | Done   |
 | NFR-5 | —           | T9           | Todo   |
-| NFR-6 | 3           | T3, T4       | Todo   |
-| NFR-7 | 8           | T9           | Todo   |
+| NFR-6 | 3           | T3, T4       | Done   |
+| NFR-7 | 8           | T9           | Done   |
 
 ## 12. Change log
 
@@ -134,3 +134,4 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 |------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | 2026-10-23 | First draft: decisions D1 to D7, FR-1 to FR-7, NFR-1 to NFR-7                                                                       |
 | 2026-10-23 | After the spike: D1 reordered, D8 (pin Pkcs), FR-8 (`KnownIPNetworks`), FR-9 (no vulnerability warnings), NFR-3 and NFR-4 baselines |
+| 2026-10-23  | Built (T1 to T9): FR-1 to FR-5 and FR-7 to FR-9 done, NFR-1 to NFR-4, NFR-6 and NFR-7 verified. FR-6 and NFR-5 wait for the PR |

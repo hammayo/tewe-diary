@@ -36,6 +36,7 @@ The TMDB NDJSON transform has a dependency-free golden-file check:
 ```bash
 bash scripts/tests/test_tmdb_transform.sh
 bash scripts/tests/test_tmdb_details_transform.sh   # details enrichment: credit trimming + trailer selection
+bash scripts/tests/test_reset_data_args.sh          # reset-data.sh rejects bad --pages / --no-fetch options before wiping anything
 ```
 
 It runs `scripts/helpers/tmdb-to-ndjson.jq` over a sample TMDB response and diffs the
