@@ -94,3 +94,5 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
   - `Admin`: deleting movies
 - **Richer v2 browse API** (parked, see [the PRD](_docs/prds/_03-v2-browse-api-prd.md)). Genre filter, search and card
   payloads on top of the v2 Minimal API, with the SDK gaining a v2 client alongside it.
+- **.NET 10 follow-ups** (see [the PRD](_docs/prds/_05-dotnet-10-upgrade-prd.md)). Move to Swashbuckle 10 with Microsoft.OpenApi 2.x,
+  take the `Refit` and `NSubstitute` major versions, and do a routine update of the remaining packages.

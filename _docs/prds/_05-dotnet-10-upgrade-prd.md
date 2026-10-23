@@ -2,7 +2,7 @@
 
 |              |                                                                                                         |
 |--------------|---------------------------------------------------------------------------------------------------------|
-| **Status**   | Built and verified locally — 2026-10-23. Waiting on the PR's CI and SonarCloud checks (FR-6) and the merge (NFR-5) |
+| **Status**   | Done — merged to `develop` on 2026-10-23 (PR #8, CI green). Production gets it with the next `develop` → `main` merge |
 | **Owner**    | Hammy Babar                                                                                             |
 | **Branch**   | `feature/roadmap-dotnet-10-upgrade`                                                                     |
 | **Deadline** | Before 10 November 2026, when .NET 9 reaches end of support                                             |
@@ -63,7 +63,7 @@ until November 2028.
 | FR-3   | Remove an unused package   | `Microsoft.AspNetCore.OpenApi` is gone from `Movies.Api`, `Identity.Api` and `Directory.Packages.props`, and the Swagger tests still pass                                                                    | Done   |
 | FR-4   | Third-party packages       | Only a package the framework change needs is moved (D6, D7). `Swashbuckle.AspNetCore` stays on 9.0.6 and design decisions say why and when to revisit                                                        | Done   |
 | FR-5   | Images and stack           | `bash scripts/stack-up.sh` builds both images on `10.0`. Both APIs report healthy, Swagger offers 1.0 and 2.0, a migration run succeeds, and the same request to v1 and v2 returns matching bodies           | Done   |
-| FR-6   | CI and SonarCloud          | The workflows resolve the .NET 10 SDK from `global.json`, the SonarCloud scanner supports it, and the PR's checks are green                                                                                  | Todo   |
+| FR-6   | CI and SonarCloud          | The workflows resolve the .NET 10 SDK from `global.json`, the SonarCloud scanner supports it, and the PR's checks are green                                                                                  | Done   |
 | FR-7   | Docs                       | No file names .NET 9 as the current target (history excepted): `README.md` (badge and text), `CLAUDE.md`, `_docs/_getting-started.md` and any other doc found by search. The README roadmap item is removed  | Done   |
 | FR-8   | Obsolete API               | `ForwardedHeadersOptions.KnownNetworks` (obsolete in ASP.NET Core 10, `ASPDEPR005`) becomes `KnownIPNetworks`, with the same behaviour: the allow-list is still cleared                                      | Done   |
 | FR-9   | Vulnerability warnings     | The build has no `NU1902` or `NU1903` warning. `System.Security.Cryptography.Pkcs` is pinned centrally (D8) and `dotnet list package --vulnerable --include-transitive` is empty                             | Done   |
@@ -76,7 +76,7 @@ until November 2028.
 | NFR-2   | **No new moving parts.** No migration, no `appsettings.json` key, no v1 controller change, no React change, no new package reference (a transitive version pin is not one)                                          | Done   |
 | NFR-3   | **Warnings do not rise.** The baseline is one warning (`CS8625` in `BadRequestExceptionHandlerTests`). The count on .NET 10 is no higher, and none is suppressed to get there                                       | Done   |
 | NFR-4   | **No vulnerable packages.** The baseline lists `System.Security.Cryptography.Pkcs` 9.0.0 and two old packages in `Identity.Api`. After the upgrade `dotnet list package --vulnerable --include-transitive` is empty | Done   |
-| NFR-5   | **On time.** The change is merged before 10 November 2026                                                                                                                                                           | Todo   |
+| NFR-5   | **On time.** The change is merged before 10 November 2026                                                                                                                                                           | Done   |
 | NFR-6   | **Repo rules hold.** The target framework is only in `backend/Directory.Build.props`, package versions only in `backend/Directory.Packages.props`, and the dependency rule is untouched                             | Done   |
 | NFR-7   | **Reversible.** The change is one revert. The database, the contracts and the React app are untouched, so nothing needs migrating back                                                                              | Done   |
 
@@ -116,7 +116,7 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 | FR-3  | 5           | T2           | Done   |
 | FR-4  | 6           | T5, T8       | Done   |
 | FR-5  | 7           | T6           | Done   |
-| FR-6  | 5           | T7           | Todo   |
+| FR-6  | 5           | T7           | Done   |
 | FR-7  | 5           | T8           | Done   |
 | FR-8  | 5           | T4           | Done   |
 | FR-9  | 6           | T4           | Done   |
@@ -124,7 +124,7 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 | NFR-2 | 3           | T9           | Done   |
 | NFR-3 | 7           | T1, T9       | Done   |
 | NFR-4 | 7           | T1, T9       | Done   |
-| NFR-5 | —           | T9           | Todo   |
+| NFR-5 | —           | T9           | Done   |
 | NFR-6 | 3           | T3, T4       | Done   |
 | NFR-7 | 8           | T9           | Done   |
 
@@ -135,3 +135,4 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 | 2026-10-23 | First draft: decisions D1 to D7, FR-1 to FR-7, NFR-1 to NFR-7                                                                       |
 | 2026-10-23 | After the spike: D1 reordered, D8 (pin Pkcs), FR-8 (`KnownIPNetworks`), FR-9 (no vulnerability warnings), NFR-3 and NFR-4 baselines |
 | 2026-10-23  | Built (T1 to T9): FR-1 to FR-5 and FR-7 to FR-9 done, NFR-1 to NFR-4, NFR-6 and NFR-7 verified. FR-6 and NFR-5 wait for the PR |
+| 2026-10-23  | Merged (PR #8): SonarCloud Code Analysis and the build job passed on the 10 SDK, so FR-6 and NFR-5 are done. Follow-ups added to the README roadmap |
