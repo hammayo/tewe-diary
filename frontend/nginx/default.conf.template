@@ -1,0 +1,50 @@
+# Same origin for the browser (PRD D1): /api goes to Movies.Api, /identity to Identity.Api, so there is no CORS.
+# The APIs redirect plain HTTP to HTTPS unless they are told the original request was HTTPS, so every proxied
+# request carries X-Forwarded-Proto: https and the dev certificate never reaches the browser.
+server {
+  listen 8080;
+  root /usr/share/nginx/html;
+
+  # D9. Trailers come from YouTube or Vimeo, artwork from TMDB.
+  add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https://image.tmdb.org; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+  location /api/ {
+    proxy_pass ${MOVIES_UPSTREAM};
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  location /identity/ {
+    rewrite ^/identity/(.*)$ /$1 break;
+    proxy_pass ${IDENTITY_UPSTREAM};
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  # Runtime settings for the SPA, filled from the container environment (no rebuild to change them).
+  location = /config.json {
+    default_type application/json;
+    add_header Cache-Control "no-cache";
+    add_header X-Content-Type-Options "nosniff" always;
+    return 200 '{"heroSlugs":"${HERO_SLUGS}"}';
+  }
+
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    # add_header in a location drops the server-level ones, so repeat them.
+    add_header X-Content-Type-Options "nosniff" always;
+  }
+
+  location / {
+    try_files $uri /index.html;
+    add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https://image.tmdb.org; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  }
+}

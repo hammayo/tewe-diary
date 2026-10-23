@@ -41,7 +41,18 @@ PG_ADMIN="${PG_ADMIN:-teweadmin}"
 
 step()  { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
 gen()   { openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | cut -c1-24; }
-run()   { if $DRY_RUN; then printf '  [dry-run] '; printf '%q ' "$@"; printf '\n'; else "$@"; fi; }
+run()   { if $DRY_RUN; then dry_print "$@"; else "$@"; fi; }
+dry_print() {  # print a command, redacting any argument that is a generated password
+  printf '  [dry-run] '
+  local a
+  for a in "$@"; do
+    case "$a" in
+      "${PG_ADMIN_PW:-}"|"${DDL_PW:-}"|"${APP_PW:-}"|"${IMPORTER_PW:-}") a='***' ;;
+    esac
+    printf '%q ' "$a"
+  done
+  printf '\n'
+}
 secret_set() {  # $1 name  $2 value  (value redacted in dry-run; retries while KV RBAC propagates)
   if $DRY_RUN; then echo "  [dry-run] az keyvault secret set --vault-name $KV --name $1 --value ***"; return; fi
   local i

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Brings up the full Docker stack (db + identity-api + movies-api) detached,
-# then prints the Swagger URLs once the containers are started.
+# Brings up the full Docker stack (db + identity-api + movies-api + frontend) detached,
+# then prints the frontend and Swagger URLs once the containers are started.
 #
 # Ensures the ASP.NET dev cert used for HTTPS in the containers exists
 # (.certs/aspnet-dev.pfx), generating it on first run if needed.
@@ -42,10 +42,6 @@ fi
 
 docker compose -f "$REPO_ROOT/docker-compose.yml" up -d --build --remove-orphans
 
-printf '\nSwagger UIs:\n'
-printf '  Movies.Api:    http://localhost:5001/swagger  |  https://localhost:7001/swagger\n'
-printf '  Identity.Api:  http://localhost:5003/swagger  |  https://localhost:7003/swagger\n'
-
 # Movies data: counts with a breakdown, when TMDB data was last imported, the scripts in the order
 # they're used (fetch -> load, or the enrich shortcut), and a next step only when one is needed.
 # Retry briefly while migrations run on boot (the query fails until they have).
@@ -83,13 +79,13 @@ printf '         trending [day|week]                 trending now (top 10)\n'
 printf '         ids 680 550                         exact TMDB ids (--help for all)\n'
 printf '    2. scripts/load-movies.sh [files...]   load every data/*.ndjson (or just the files you name);\n'
 printf '                                           duplicates across files are collapsed on tmdb_id\n'
-printf '    Or, for movies already in the db (fetches, then loads):\n'
-printf '       scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)\n'
-printf '    Start over (deletes every movie and rating, asks first):\n'
+printf '       Or for movies already in the db (fetches, then loads):\n'
+printf '       scripts/enrich-movies.sh [--all]    fill in missing details (--all: refresh every TMDB movie)\n\n'
+printf '       Or for a clean start over (deletes every movie and rating, asks first):\n'
 printf '       scripts/reset-data.sh [--volume] [--reload | --pages N | --no-fetch]   wipe the data (--volume: the db\n'
 printf '                                                     volume too; --reload: then fetch 500 pages + load, slow;\n'
 printf '                                                     --pages N: fetch only N pages; --no-fetch: reload the\n'
-printf '                                                     data/*.ndjson already on disk, no TMDB calls)\n'
+printf '                                                     data/*.ndjson already on disk no TMDB calls)\n'
 
 if [[ -n "$movies" ]]; then
   if [[ "$movies" -eq 0 ]]; then
@@ -98,3 +94,9 @@ if [[ -n "$movies" ]]; then
     printf '\n  -> %s TMDB movies are missing details. Run: scripts/enrich-movies.sh\n' "$((tmdb - enriched))"
   fi
 fi
+
+# Last, so the links sit at the bottom of the output, ready to click.
+printf '\nOpen:\n'
+printf '  Frontend:      http://localhost:5173\n'
+printf '  Movies.Api:    http://localhost:5001/swagger  |  https://localhost:7001/swagger\n'
+printf '  Identity.Api:  http://localhost:5003/swagger  |  https://localhost:7003/swagger\n'

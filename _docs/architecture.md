@@ -28,20 +28,20 @@ The core intentionally bundles domain + application + infrastructure in one proj
 right-sized for this scope. The folders map 1:1 to a project split if a second data
 store ever justifies it (see [design-decisions.md](design-decisions.md)):
 
-| Folder                       | Layer          | Concern                                            |
-|------------------------------|----------------|----------------------------------------------------|
-| `Models/`                    | Domain         | Entities, value objects                            |
-| `Services/`, `Validators/`   | Application    | Use cases, orchestration, `FluentValidation` rules |
-| `Repositories/`, `Database/` | Infrastructure | Dapper / Npgsql / FluentMigrator                   |
+| Folder                        | Layer            | Concern                                                |
+|-------------------------------|------------------|--------------------------------------------------------|
+| `Models/`                     | Domain           | Entities, value objects                                |
+| `Services/`, `Validators/`    | Application      | Use cases, orchestration, `FluentValidation` rules     |
+| `Repositories/`, `Database/`  | Infrastructure   | Dapper / Npgsql / FluentMigrator                       |
 
 ### Schema
 
-| Table                         | Owner               | Notes                                                                                                |
-|-------------------------------|---------------------|------------------------------------------------------------------------------------------------------|
-| `movies`, `genres`, `ratings` | API (CRUD) + import | Unchanged by the TMDB details work                                                                   |
-| `movie_metadata`              | import              | `tmdb_id` (unique) and `imdb_id` (non-unique index), plus the enriched TMDB `raw`                    |
-| `movie_details`               | import (M0002)      | 1:1 with TMDB movies: overview, tagline, runtime, poster/backdrop paths, trailer site/key/name       |
-| `movie_credits`               | import (M0002)      | Director(s), writers and top-10 cast, in order. `tmdb_person_id` is kept for a future `people` table |
+| Table                           | Owner                | Notes                                                                                                 |
+|---------------------------------|----------------------|-------------------------------------------------------------------------------------------------------|
+| `movies`, `genres`, `ratings`   | API (CRUD) + import  | Unchanged by the TMDB details work                                                                    |
+| `movie_metadata`                | import               | `tmdb_id` (unique) and `imdb_id` (non-unique index), plus the enriched TMDB `raw`                     |
+| `movie_details`                 | import (M0002)       | 1:1 with TMDB movies: overview, tagline, runtime, poster/backdrop paths, trailer site/key/name        |
+| `movie_credits`                 | import (M0002)       | Director(s), writers and top-10 cast, in order. `tmdb_person_id` is kept for a future `people` table  |
 
 TMDB details are read-only from the API's point of view.
 - `MovieDetailsRepository` reads them, and `MovieService` attaches them to single-movie reads.
@@ -65,17 +65,17 @@ HTTP ─→ routing (URL-segment version) ─→ authN (JWT) ─→ authZ (polic
 
 ## Project map
 
-| Project                 | Path                           | Responsibility                                                                               |
-|-------------------------|--------------------------------|----------------------------------------------------------------------------------------------|
-| Movies.Contracts        | `backend/src/Movies.Contracts/`            | Request/response DTOs (leaf — no project dependencies)                                       |
-| Movies.Application      | `backend/src/Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import |
-| Movies.Api              | `backend/src/Movies.Api/`                  | Web API — controllers, contract mapping, auth, caching, Swagger, health                      |
-| Identity.Api            | `backend/src/Identity.Api/`                | Issues the JWTs the Movies API validates                                                     |
-| Frontend                | `frontend/`                                | React shell (Vite + TypeScript), served by nginx. Placeholder until the frontend PRD         |
-| Movies.Api.Sdk          | `backend/sdk/Movies.Api.Sdk/`          | Refit client SDK (references Contracts)                                                      |
-| Movies.Api.Sdk.Consumer | `backend/sdk/Movies.Api.Sdk.Consumer/` | Example console consumer of the SDK                                                          |
-| Movies.DbTool           | `backend/tools/Movies.DbTool/`     | CLI: `migrate` and `import <ndjson>`                                                         |
-| Tests                   | `backend/tests/`                       | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`  |
+| Project                   | Path                                       | Responsibility                                                                                  |
+|---------------------------|--------------------------------------------|-------------------------------------------------------------------------------------------------|
+| Movies.Contracts          | `backend/src/Movies.Contracts/`            | Request/response DTOs (leaf — no project dependencies)                                          |
+| Movies.Application        | `backend/src/Movies.Application/`          | Core: domain models, services, validators, repositories, DB config & migrations, TMDB import    |
+| Movies.Api                | `backend/src/Movies.Api/`                  | Web API — controllers, contract mapping, auth, caching, Swagger, health                         |
+| Identity.Api              | `backend/src/Identity.Api/`                | Issues the JWTs the Movies API validates                                                        |
+| Frontend                  | `frontend/`                                | React app (Vite, TypeScript, Tailwind, shadcn/ui), served by nginx with a same-origin proxy     |
+| Movies.Api.Sdk            | `backend/sdk/Movies.Api.Sdk/`              | Refit client SDK (references Contracts)                                                         |
+| Movies.Api.Sdk.Consumer   | `backend/sdk/Movies.Api.Sdk.Consumer/`     | Example console consumer of the SDK                                                             |
+| Movies.DbTool             | `backend/tools/Movies.DbTool/`             | CLI: `migrate` and `import <ndjson>`                                                            |
+| Tests                     | `backend/tests/`                           | `Movies.Api.Tests`, `Movies.Application.Tests`, `Identity.Api.Tests`, `Movies.Tests.Shared`     |
 
 The target framework, `Nullable` and `ImplicitUsings` are set once in `backend/Directory.Build.props`, and the SDK is
 pinned in `global.json`. CI reads the SDK from `global.json`; the Dockerfiles take the image tag from the

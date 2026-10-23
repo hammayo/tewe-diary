@@ -16,7 +16,8 @@ JWTs and the Movies API authorises against them with policies. Postgres sits beh
 Dapper, with FluentMigrator owning the schema and separate least-privilege roles for
 migrations, imports and runtime. Integration tests run against a real database in
 Testcontainers. A script-and-CLI pipeline pulls and enriches the TMDB catalogue, and
-GitHub Actions builds, tests, migrates and deploys to Azure.
+GitHub Actions builds, tests, migrates and deploys to Azure. The deploy job stays off until the Azure resources exist and
+`DEPLOY_ENABLED` is set, so a merge to `main` runs the tests only (see [CI/CD & deployment](_docs/ci-cd.md)).
 
 > What I want a reader to see is where the boundaries sit, how authorisation is
 > modelled, how the data layer stays testable and how the whole thing ships. Each
@@ -66,6 +67,7 @@ Full setup, config, ports, and a token-and-create-a-movie `curl` walkthrough are
 | Doc                                                   | What's in it                                                             |
 |-------------------------------------------------------|--------------------------------------------------------------------------|
 | [Getting started](_docs/_getting-started.md)          | Prerequisites, `.env` config, ports/URLs, run, quickstart `curl`         |
+| [Frontend screens](_docs/frontend-screens.md)         | Screenshots of every screen, plus the v2 Swagger the app calls           |
 | [Architecture](_docs/architecture.md)                 | Dependency rule, layering, request pipeline, project map                 |
 | [API reference](_docs/api.md)                         | Endpoints, authorization tiers, query params, error contract, versioning |
 | [Design decisions & notes](_docs/design-decisions.md) | The deliberate trade-offs and when to revisit them                       |
@@ -82,7 +84,7 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
+- **React frontend** (phase 1 built in `frontend/`, see [the PRD](_docs/prds/_04-react-frontend-prd.md) and [running it](_docs/_getting-started.md#frontend)). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:
   - anonymous: the poster grid with title and year filters, sorting and paging, and a
