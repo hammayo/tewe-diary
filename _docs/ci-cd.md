@@ -19,6 +19,12 @@ build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate
 - **Migrate** applies FluentMigrator migrations **before** deploy, using a
   least-privilege **DDL role** (separate from the app's runtime role).
 - **Deploy** ships both APIs straight to their Azure Web Apps (Basic B1 plan — no slots).
+- **Deployment is off until `DEPLOY_ENABLED` is `true`.** The `deploy` job in `deploy.yml`, and `import.yml`, run only when the
+  repository variable `DEPLOY_ENABLED` is `true`. Without it, a push to `main` runs the `test` job, skips `deploy` and ships
+  nothing to Azure, yet the workflow still shows green (so does the README's Deploy badge). The runbook sets the variable as
+  its last step in [step 9](azure-deployment.md#9-github-secrets--variables). `gh variable list` shows whether it is set.
+- **Rollback** re-points both Web Apps at the previous commit's image (tags are commit SHAs); see
+  [Roll back](azure-deployment.md#roll-back-a-bad-deploy).
 
 - **Frontend** (`frontend.yml`) runs `npm ci --ignore-scripts` and `npm run build` for `frontend/**` changes only.
 

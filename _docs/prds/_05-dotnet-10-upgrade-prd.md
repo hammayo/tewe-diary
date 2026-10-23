@@ -2,7 +2,7 @@
 
 |              |                                                                                                         |
 |--------------|---------------------------------------------------------------------------------------------------------|
-| **Status**   | Done — merged to `develop` on 2026-10-23 (PR #8, CI green). Production gets it with the next `develop` → `main` merge |
+| **Status**   | Done — merged to `develop` on 2026-10-23 (PR #8, CI green). `main` gets it with the next `develop` → `main` merge. The Deploy job is off (`DEPLOY_ENABLED` is not set), so nothing ships to Azure yet |
 | **Owner**    | Hammy Babar                                                                                             |
 | **Branch**   | `feature/roadmap-dotnet-10-upgrade`                                                                     |
 | **Deadline** | Before 10 November 2026, when .NET 9 reaches end of support                                             |

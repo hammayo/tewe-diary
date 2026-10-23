@@ -16,7 +16,8 @@ JWTs and the Movies API authorises against them with policies. Postgres sits beh
 Dapper, with FluentMigrator owning the schema and separate least-privilege roles for
 migrations, imports and runtime. Integration tests run against a real database in
 Testcontainers. A script-and-CLI pipeline pulls and enriches the TMDB catalogue, and
-GitHub Actions builds, tests, migrates and deploys to Azure.
+GitHub Actions builds, tests, migrates and deploys to Azure. The deploy job stays off until the Azure resources exist and
+`DEPLOY_ENABLED` is set, so a merge to `main` runs the tests only (see [CI/CD & deployment](_docs/ci-cd.md)).
 
 > What I want a reader to see is where the boundaries sit, how authorisation is
 > modelled, how the data layer stays testable and how the whole thing ships. Each
