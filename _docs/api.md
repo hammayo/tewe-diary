@@ -14,19 +14,19 @@ A richer v2 (cards, genre filter, search) is designed and parked, not built (see
 
 ## Endpoints
 
-| Method   | Route                         | Auth                  | Notes                                   |
-|----------|-------------------------------|-----------------------|-----------------------------------------|
-| `POST`   | `/api/v1/movies`              | Trusted               | Create; `201 Created` + `Location`      |
-| `GET`    | `/api/v1/movies/{idOrSlug}`   | Anonymous             | Read by GUID **or** slug; output-cached |
-| `GET`    | `/api/v1/movies`              | Anonymous             | Paged + filterable list; output-cached  |
-| `PUT`    | `/api/v1/movies/{id}`         | Trusted               | Update                                  |
-| `DELETE` | `/api/v1/movies/{id}`         | Admin                 | Delete                                  |
-| `PUT`    | `/api/v1/movies/{id}/ratings` | Authenticated         | Rate a movie                            |
-| `DELETE` | `/api/v1/movies/{id}/ratings` | Authenticated         | Remove own rating                       |
-| `GET`    | `/api/v1/ratings/me`          | Authenticated         | Caller's ratings                        |
-| `POST`   | `/api/v1/admin/cache/evict`   | API key (`x-api-key`) | Evict the movie cache tag (v1 only)     |
-| `POST`   | `/token` *(Identity.Api)*     | —                     | Issue a JWT                             |
-| `GET`    | `/_health`                    | —                     | Liveness/readiness (DB check)           |
+| Method   | Route                           | Auth                  | Notes                                      |
+|----------|---------------------------------|-----------------------|--------------------------------------------|
+| `POST`   | `/api/v1/movies`                | Trusted               | Create; `201 Created` + `Location`         |
+| `GET`    | `/api/v1/movies/{idOrSlug}`     | Anonymous             | Read by GUID **or** slug; output-cached    |
+| `GET`    | `/api/v1/movies`                | Anonymous             | Paged + filterable list; output-cached     |
+| `PUT`    | `/api/v1/movies/{id}`           | Trusted               | Update                                     |
+| `DELETE` | `/api/v1/movies/{id}`           | Admin                 | Delete                                     |
+| `PUT`    | `/api/v1/movies/{id}/ratings`   | Authenticated         | Rate a movie                               |
+| `DELETE` | `/api/v1/movies/{id}/ratings`   | Authenticated         | Remove own rating                          |
+| `GET`    | `/api/v1/ratings/me`            | Authenticated         | Caller's ratings                           |
+| `POST`   | `/api/v1/admin/cache/evict`     | API key (`x-api-key`) | Evict the movie cache tag (v1 only)        |
+| `POST`   | `/token` *(Identity.Api)*       | —                     | Issue a JWT                                |
+| `GET`    | `/_health`                      | —                     | Liveness/readiness (DB check)              |
 
 Writes evict the movie output-cache tag, so cached reads stay correct after a mutation.
 
@@ -34,12 +34,12 @@ Writes evict the movie output-cache tag, so cached reads stay correct after a mu
 
 `MovieResponse` has two nullable TMDB fields, both added without breaking existing clients:
 
-| Call                                   | `posterUrl`                  | `details`                   |
-|----------------------------------------|------------------------------|-----------------------------|
-| `GET /movies/{idOrSlug}`, TMDB movie   | URL or `null`                | object                      |
-| `GET /movies/{idOrSlug}`, manual movie | `null`                       | `null`                      |
-| `GET /movies` (list)                   | URL or `null`                | `null` (use the single GET) |
-| `POST` / `PUT` responses               | `null` (echo of the request) | `null`                      |
+| Call                                      | `posterUrl`                      | `details`                        |
+|-------------------------------------------|----------------------------------|----------------------------------|
+| `GET /movies/{idOrSlug}`, TMDB movie      | URL or `null`                    | object                           |
+| `GET /movies/{idOrSlug}`, manual movie    | `null`                           | `null`                           |
+| `GET /movies` (list)                      | URL or `null`                    | `null` (use the single GET)      |
+| `POST` / `PUT` responses                  | `null` (echo of the request)     | `null`                           |
 
 ```json
 {
@@ -95,13 +95,13 @@ the token via `CustomClaims` (see [_getting-started.md](_getting-started.md)).
 
 `GET /api/v1/movies` accepts:
 
-| Param      | Type   | Default  | Meaning                                                       |
-|------------|--------|----------|---------------------------------------------------------------|
-| `title`    | string | —        | Case-insensitive partial match                                |
-| `year`     | int    | —        | Filter by year of release                                     |
-| `sortBy`   | string | —        | Sort field; prefix `-` for descending (e.g. `-yearOfRelease`) |
-| `page`     | int    | `1`      | Page number                                                   |
-| `pageSize` | int    | `10`     | Items per page                                                |
+| Param          | Type   | Default  | Meaning                                                              |
+|----------------|--------|----------|----------------------------------------------------------------------|
+| `title`        | string | —        | Case-insensitive partial match                                       |
+| `year`         | int    | —        | Filter by year of release                                            |
+| `sortBy`       | string | —        | Sort field; prefix `-` for descending (e.g. `-yearOfRelease`)        |
+| `page`         | int    | `1`      | Page number                                                          |
+| `pageSize`     | int    | `10`     | Items per page                                                       |
 
 Responses are paged (`PagedResponse`): items plus `page`, `pageSize`, and `total`.
 

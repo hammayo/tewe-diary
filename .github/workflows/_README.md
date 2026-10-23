@@ -51,6 +51,9 @@ Flexible Server.
   then deploys both **directly to production** and health-checks them. No staging slots (the
   Basic B1 plan doesn't support them). Keep migrations backward-compatible (expand/contract)
   to minimise the brief new-schema/old-image window during restart.
+- **Both are gated by the repository variable `DEPLOY_ENABLED`.** Unless it is `true`, `deploy.yml` runs only its `test` job
+  (the `deploy` job is skipped, so nothing ships) and `import.yml` is skipped. It is off until Azure is provisioned; see
+  the [runbook](../../_docs/azure-deployment.md).
 - **`import.yml`** — manual only: fetches from TMDB, runs the idempotent upsert import as the
   least-privilege `movies_importer` role, then evicts the API's `movies` cache.
 
@@ -84,6 +87,7 @@ Secrets:
 - `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 
 Variables:
+- `DEPLOY_ENABLED` (`true` to run the `deploy` job and `import.yml`; leave unset to skip them)
 - `ACR_NAME`, `ACR_LOGIN_SERVER` (e.g. `myacr.azurecr.io`)
 - `RESOURCE_GROUP`
 - `WEBAPP_NAME` (Movies.Api Web App)

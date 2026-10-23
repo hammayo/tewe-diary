@@ -284,6 +284,29 @@ curl -fsSL "https://$MOVIES_APP.azurewebsites.net/_health"     && echo OK
 curl -fsSL "https://$IDENTITY_APP.azurewebsites.net/_health"   && echo OK
 ```
 
+### Roll back a bad deploy
+
+`deploy.yml` tags both images with the commit SHA and nothing in the pipeline deletes old tags, so the previous release is
+still in the registry. Rolling back re-points each Web App at that tag. It does not undo migrations, which is why they must
+stay backward-compatible (the old image has to run against the new schema).
+
+```bash
+# Find the previous release: the commit SHA of the last good Deploy run (gh run list --workflow=Deploy),
+# or look at the newest tags in the registry.
+az acr repository show-tags -n "$ACR_NAME" --repository movies-api --orderby time_desc --top 5 -o tsv
+
+PREV=<previous-commit-sha>
+for pair in "$MOVIES_APP:movies-api" "$IDENTITY_APP:identity-api"; do
+  APP="${pair%%:*}"; REPO="${pair##*:}"
+  az webapp config container set -g "$RG" -n "$APP" \
+    --container-image-name "$ACR_LOGIN_SERVER/$REPO:$PREV" \
+    --container-registry-url "https://$ACR_LOGIN_SERVER"
+  az webapp restart -g "$RG" -n "$APP"
+done
+
+# Then confirm both apps are healthy again (step 10).
+```
+
 ## 11. Optional: seed data
 
 ```bash
