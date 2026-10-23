@@ -1,10 +1,32 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router";
+import { ApiError } from "@/api/client";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { FocusProvider } from "@/focus/FocusProvider";
+import "./index.css";
+import { router } from "./router";
 
-// Placeholder shell: the real screens come with the frontend PRD.
-createRoot(document.getElementById('root')!).render(
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      // A 4xx will not change on a retry; a server or network blip gets one more go.
+      retry: (count, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && count < 1,
+    },
+  },
+});
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <h1>Tewe Diary</h1>
-    <p>API: {import.meta.env.VITE_API_URL}</p>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <FocusProvider>
+          <RouterProvider router={router} />
+        </FocusProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
-)
+);

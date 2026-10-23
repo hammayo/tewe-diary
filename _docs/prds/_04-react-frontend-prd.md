@@ -2,7 +2,7 @@
 
 |             |                                                                                                                     |
 |-------------|---------------------------------------------------------------------------------------------------------------------|
-| **Status**  | Draft — 2026-10-23 (nothing built beyond the placeholder shell; every requirement is `Todo` or `Deferred`, see §11) |
+| **Status**  | In progress — 2026-10-23 (phase 1 built on `feature/roadmap-react-frontend`; open items are in §11 and the findings below) |
 | **Owner**   | Hammy Babar                                                                                                         |
 | **Branch**  | `feature/roadmap-react-frontend` (proposed)                                                                         |
 | **Doc set** | **PRD (this)** → SDD `_tasks/04-react-frontend-spec.md` → plan `_tasks/04-react-frontend-plan.md` (not written)     |
@@ -65,7 +65,7 @@ big, focus-driven navigation.
 
 | Id  | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 |-----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| D1  | **Same-origin access, no CORS.** The browser only calls `/api/...` and `/identity/...` on its own origin. The Vite dev server (`server.proxy`) and the nginx container (`proxy_pass`) forward them to Movies.Api and Identity.Api. `VITE_API_URL` is removed. The container reaches the APIs over the compose network on plain HTTP, so the dev certificate never reaches the browser.                                                                                                                                                                                                                                                                                                       |
+| D1  | **Same-origin access, no CORS.** The browser only calls `/api/...` and `/identity/...` on its own origin. The Vite dev server (`server.proxy`) and the nginx container (`proxy_pass`) forward them to Movies.Api and Identity.Api. `VITE_API_URL` is removed. The container reaches the APIs over the compose network on plain HTTP, so the dev certificate never reaches the browser. Movies.Api redirects plain HTTP to HTTPS (`307`), so the proxy sends `X-Forwarded-Proto: https`, which the API honours.                                                                                                                                                                                                                                                                                                       |
 | D2  | **Stack:** Vite, React, TypeScript (strict), React Router, TanStack Query for server state, **Tailwind CSS v4** (`@tailwindcss/vite`) and **shadcn/ui** for the component layer, Vitest + React Testing Library + MSW for tests, ESLint. shadcn/ui is copied into `frontend/src/components/ui/` (Radix UI primitives plus Tailwind classes), so the components are my code, not a runtime dependency. No state library and no spatial-navigation library. I am a backend engineer, so I use popular open-source UI libraries instead of hand-rolling widgets.                                                                                                                                |
 | D3  | **"Who's watching?" profile screen.** Three demo profiles (Member, Trusted, Admin) chosen with the arrow keys or the mouse. Choosing one calls `POST /identity/token` with a stable user id and the matching claims (`trusted_member`, `admin`). An anonymous "Browse without a profile" tile is also offered. The screen says plainly that this is a demo identity.                                                                                                                                                                                                                                                                                                                         |
 | D4  | **The JWT lives in memory only.** The user id and email are kept in `localStorage` (they are not secrets), so a reload keeps "My ratings" attached to the same user after the profile is chosen again. The token is never in storage, URLs or logs.                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -81,7 +81,7 @@ big, focus-driven navigation.
 | D14 | **The app calls `/api/v2`.** v2 matches v1 shape for shape (PRD 03), and the richer v2 will grow there. The version is one constant, so switching back to v1 is one line.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | D15 | **TV styling.** Dark only, `rem` units with the root size scaled to the viewport (24 px body text at 1080p), a 5% safe margin on every edge, and a focus ring plus a scale-up on the focused card. Tailwind v4 tokens in `src/index.css` (`@theme`) carry the palette and fonts, and the shadcn theme variables map onto them. The TV pieces (hero, rows, cards, focus ring) are my own components. shadcn/ui supplies the generic pieces (dialog, button, input, table, tooltip, skeleton, toast). The look is the design in `_docs/tewe-diary-ui-design.pdf`.                                                                                                                              |
 | D16 | **Trailer player.** Play opens a full-screen shadcn/ui `Dialog` (Radix) with an on-screen **Close** button that takes focus first. A cross-origin iframe swallows key presses once clicked, so Escape cannot be the only way out. Radix traps focus inside the dialog and returns it to the card or button that opened it on close. Hero autoplay uses `autoplay=1&mute=1` for YouTube and `autoplay=1&muted=1&background=1` for Vimeo.                                                                                                                                                                                                                                                      |
-| D17 | **Docker for dev, test and deploy.** One multi-stage `frontend/Dockerfile` with three targets: `dev` (Vite dev server with hot reload, source bind-mounted, on `:5173`), `test` (runs lint, typecheck and Vitest, which is what CI calls) and `final` (Vite build served by unprivileged nginx with the CSP and the `/api` and `/identity` proxy from D1 and D9). Compose runs `final` by default as `frontend` on `:5173`. `docker compose --profile dev up frontend-dev` and `docker compose run --rm frontend-test` run the other two, so no local Node install is needed. The proxy targets come from environment variables (compose service names inside the network), not `localhost`. |
+| D17 | **Docker for dev, test and deploy.** One multi-stage `frontend/Dockerfile` with three targets: `dev` (Vite dev server with hot reload, source bind-mounted, on `:5174` so it can run beside the production container), `test` (runs lint, typecheck and Vitest, which is what CI calls) and `final` (Vite build served by unprivileged nginx with the CSP and the `/api` and `/identity` proxy from D1 and D9). Compose runs `final` by default as `frontend` on `:5173`. `docker compose --profile dev up frontend-dev` and `docker compose run --rm --build frontend-test` run the other two, so no local Node install is needed. The proxy targets come from environment variables (compose service names inside the network), not `localhost`. |
 | D18 | **Unit tests stay essential.** Test the logic and the contract with the API, not the markup. Vitest with MSW covers the focus module, the API client and error mapping, role-gated controls, rate and un-rate and the Manage form's field errors. Components from shadcn/ui are not tested, and there are no snapshot tests. The manual checklist in §10 covers the rest.                                                                                                                                                                                                                                                                                                                    |
 
 ## 6. Functional requirements
@@ -191,11 +191,28 @@ present. Phase 2 then turns rows on instead of rewriting screens.
 - **shadcn/ui and Radix add weight and their own focus handling.** Radix dialogs trap and restore focus, which
   matches D16 but must not fight the in-house focus module (D10) on the TV screens. The TV pieces stay my own
   components, and only the components in use are copied in, to hold NFR-3.
-- **Vite 8 and TypeScript 7 are newer than I know** and were resolved by `npm install` when I built the shell. They
-  build, but I have not reviewed their notes.
+- **Dependency choices.** Vite 8 is used as the shell had it. TypeScript is pinned to 6.0 because `typescript-eslint` does not
+  support 7 yet. React is 19 because React Router 8 requires it. `frontend/.npmrc` sets `legacy-peer-deps`, because npm 10 crashes
+  resolving the peer set when Vitest is installed without it.
 - **Hotlinking TMDB images** relies on TMDB's CDN staying available. Cards fall back to a text placeholder.
 - **Output-cached lists** can show a just-created movie late if the cache were not evicted. v2 evicts the tag on
   create, update and delete, so the UI also invalidates its own queries.
+
+## 9a. Findings from the build
+
+- **Newest paging is unstable (backend, needs a decision).** `GET /movies?sortBy=-yearofrelease` orders by one column
+  with no tiebreak (`MovieRepository`), and the API rejects a two-key sort. Page 1 and page 2 overlapped on 17 of 25 films
+  and three pages returned 41 unique of 75, while `sortBy=title` is clean. The UI drops repeats across pages, so nothing
+  shows twice, but some films never reach the Newest row. A title or id tiebreak in the query fixes it, which breaks NFR-1
+  (no backend change in phase 1). It belongs with the parked browse design (`_03-v2-browse-api-prd.md`).
+- **The "ended" signal for the hero trailer and autoplay in Safari and Firefox are unverified.** The muted iframe loads
+  under the CSP in Chrome with no console errors. Advancing on a real end of playback, Vimeo trailers, and Safari and
+  Firefox are still to check (NFR-16, FR-5).
+- **Measured so far.** Initial JavaScript is about 145 KB gzipped (index 90.0 KB plus the shared chunk 55.4 KB; Manage is a
+  separate 4.5 KB chunk). Lighthouse (desktop, production build) on `/profiles`: Performance 99, Accessibility 100, Best
+  Practices 100, CLS 0. Home and the other screens sit behind the in-memory token, so they are not audited yet (NFR-4, NFR-5).
+- **The list cannot tell a TMDB film from a manual one**, so the Manage table has no Source column (list items always carry
+  `details: null`).
 
 ## 10. Success metrics
 
@@ -222,40 +239,40 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 
 | Req     | SDD section  | Plan task(s)  | Status        |
 |---------|--------------|---------------|---------------|
-| FR-1    | —            | —             | Todo          |
-| FR-2    | —            | —             | Todo          |
-| FR-3    | —            | —             | Todo          |
-| FR-4    | —            | —             | Todo          |
-| FR-5    | —            | —             | Todo          |
-| FR-6    | —            | —             | Todo          |
-| FR-7    | —            | —             | Todo          |
-| FR-8    | —            | —             | Todo          |
-| FR-9    | —            | —             | Todo          |
-| FR-10   | —            | —             | Todo          |
-| FR-11   | —            | —             | Todo          |
-| FR-12   | —            | —             | Todo          |
-| FR-13   | —            | —             | Todo          |
+| FR-1      | —              | T2              | Done        |
+| FR-2      | —              | T4, T6          | Done        |
+| FR-3      | —              | T5              | Done        |
+| FR-4      | —              | T7              | Done        |
+| FR-5      | —              | T8              | In progress |
+| FR-6      | —              | T10             | Done        |
+| FR-7      | —              | T9              | Done        |
+| FR-8      | —              | T9              | Done        |
+| FR-9      | —              | T10             | Done        |
+| FR-10     | —              | T11             | Done        |
+| FR-11     | —              | T6, T7          | Done        |
+| FR-12     | —              | T6              | Done        |
+| FR-13     | —              | T4, T6, T11     | Done        |
 | FR-14   | —            | —             | Deferred      |
 | FR-15   | —            | —             | Deferred      |
 | FR-16   | —            | —             | Deferred      |
 | FR-17   | —            | —             | Deferred      |
-| NFR-1   | —            | —             | Todo          |
-| NFR-2   | —            | —             | Todo          |
-| NFR-3   | —            | —             | Todo          |
-| NFR-4   | —            | —             | Todo          |
-| NFR-5   | —            | —             | Todo          |
-| NFR-6   | —            | —             | Todo          |
-| NFR-7   | —            | —             | Todo          |
-| NFR-8   | —            | —             | Todo          |
-| NFR-9   | —            | —             | Todo          |
-| NFR-10  | —            | —             | Todo          |
-| NFR-11  | —            | —             | Todo          |
-| NFR-12  | —            | —             | Todo          |
-| NFR-13  | —            | —             | Todo          |
-| NFR-14  | —            | —             | Todo          |
-| NFR-15  | —            | —             | Todo          |
-| NFR-16  | —            | —             | Todo          |
-| NFR-17  | —            | —             | Todo          |
+| NFR-1     | —              | T13             | Done        |
+| NFR-2     | —              | T1              | Done        |
+| NFR-3     | —              | T13             | Done        |
+| NFR-4     | —              | T13             | In progress |
+| NFR-5     | —              | T13             | In progress |
+| NFR-6     | —              | T3 to T11       | Done        |
+| NFR-7     | —              | T3, T4          | Done        |
+| NFR-8     | —              | T2              | Done        |
+| NFR-9     | —              | T13             | In progress |
+| NFR-10    | —              | T6              | In progress |
+| NFR-11    | —              | T8              | In progress |
+| NFR-12    | —              | T13             | In progress |
+| NFR-13    | —              | T13             | In progress |
+| NFR-14    | —              | T12             | In progress |
+| NFR-15    | —              | T12             | Done        |
+| NFR-16    | —              | T13             | In progress |
+| NFR-17    | —              | T2              | Done        |
 
 ## 12. Change log
 
@@ -263,3 +280,4 @@ The plan's task statuses roll up here. Update this table whenever a plan task ch
 |--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 2026-10-22   | First draft: TV-style app in two phases, decisions D1 to D16, FR-1 to FR-17, NFR-1 to NFR-16, gap table                                                                                                     |
 | 2026-10-23   | Tailwind CSS v4 and shadcn/ui replace plain CSS (D2, D13, D15, D16). Added D17 (Docker for dev, test, deploy), D18 (essential tests only), NFR-17. Updated FR-1, NFR-3, NFR-6, NFR-14, NFR-15 and the risks |
+| 2026-10-23   | Phase 1 built. D1 notes the forwarded-proto header, D17 moves the dev container to :5174, findings added (9a), §11 statuses updated |

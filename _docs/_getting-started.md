@@ -34,12 +34,11 @@ is kept comment-free):
 | `JWT_ISSUER`, `JWT_AUDIENCE`          | both APIs                  | Must match on both sides or tokens are rejected                                                                                                                  |
 | `API_KEY`                             | Movies.Api                 | Sent as the `x-api-key` header for admin/ops endpoints                                                                                                           |
 | `ASPNETCORE_DEV_CERT_PASSWORD`        | stack                      | Dev HTTPS cert password. `scripts/stack-up.sh` generates `.certs/aspnet-dev.pfx` with it if missing; any non-empty value works locally                           |
-| `VITE_API_URL`                        | frontend                   | Movies.Api base URL baked into the frontend bundle at build time. `https://localhost:7001` locally                                                               |
 | `TMDB_API_KEY`                        | `scripts/fetch-tmdb.sh`    | Only for data regeneration. Accepts a **v3 API key** (32-char hex) or a **v4 read-access token** (a JWT); the script detects the shape and picks the auth scheme |
 
 ## Run
 
-**Full stack (Movies API + Identity + Frontend shell + Postgres):**
+**Full stack (Movies API + Identity + Frontend + Postgres):**
 - Rider: run the `Full Stack` or `Docker Stack` configuration under `.run/`.
 - Shell: `bash scripts/stack-up.sh` builds and starts the stack detached, then prints the URLs and a
   **Movies data** summary:
@@ -52,14 +51,39 @@ is kept comment-free):
   - a next step, only when one is needed, plus `reset-data.sh` for a clean start
   See the [TMDB import runbook](tmdb-import.md#5-progress-and-status-output).
 
+## Frontend
+
+The React app is in `frontend/` (Tailwind CSS, shadcn/ui, TanStack Query). It runs in a container for dev, test and
+deploy, so Node is not needed on the host. It calls only `/api` and `/identity` on its own origin, so there is no CORS:
+nginx (production image) and the Vite dev server both forward them to Movies.Api and Identity.Api.
+
+```bash
+docker compose up -d --build frontend            # production build on http://localhost:5173
+docker compose --profile dev up frontend-dev     # hot reload on http://localhost:5174
+docker compose run --rm --build frontend-test            # lint, typecheck and unit tests
+```
+
+- **Proxy targets.** `MOVIES_UPSTREAM` and `IDENTITY_UPSTREAM` (compose sets them to the service names on port `8080`;
+  outside compose `npm run dev` falls back to `http://localhost:5001` and `http://localhost:5003`). The proxy adds
+  `X-Forwarded-Proto: https`, because the APIs redirect plain HTTP to HTTPS otherwise.
+- **Profiles.** The first screen asks "Who's watching?". Member, Trusted and Admin ask Identity.Api for a token with that
+  tier's claims, and "Browse without a profile" stays anonymous. This is a demo identity, not authentication: anyone can
+  mint an Admin token, so do not deploy this build publicly. The token is kept in memory only, so a reload asks again.
+- **Hero list.** The five featured films are the slugs in `frontend/src/home/heroSlugs.ts`. A slug missing from the data,
+  or a film with neither trailer nor backdrop, is skipped and topped up with the newest releases.
+- **Dev container.** After a dependency change run `docker compose --profile dev up -d --build --renew-anon-volumes
+  frontend-dev`, because `node_modules` lives in a volume.
+- **npm.** `frontend/.npmrc` sets `legacy-peer-deps`: npm 10 fails to resolve the peer set when Vitest is installed
+  without it.
+
 ## URLs & ports
 
-| Service      | HTTP                         | HTTPS                  | Notes                                       |
-|--------------|------------------------------|------------------------|---------------------------------------------|
-| Movies.Api   | http://localhost:5001        | https://localhost:7001 | Swagger UI at `/swagger` (Development only) |
-| Identity.Api | http://localhost:5003        | https://localhost:7003 | `POST /token`                               |
-| Frontend     | http://localhost:5173        | —                      | Placeholder shell; `npm run dev` uses the same port |
-| Postgres     | `localhost:${POSTGRES_PORT}` | —                      | default `5432`                              |
+| Service      | HTTP                         | HTTPS                  | Notes                                                          |
+|--------------|------------------------------|------------------------|----------------------------------------------------------------|
+| Movies.Api   | http://localhost:5001        | https://localhost:7001 | Swagger UI at `/swagger` (Development only)                    |
+| Identity.Api | http://localhost:5003        | https://localhost:7003 | `POST /token`                                                  |
+| Frontend     | http://localhost:5173        | —                      | Production build behind nginx; the dev container is on `:5174` |
+| Postgres     | `localhost:${POSTGRES_PORT}` | —                      | default `5432`                                                 |
 
 Health check: `GET http://localhost:5001/_health`.
 

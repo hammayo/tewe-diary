@@ -14,17 +14,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --ignore-scripts
-      - run: npm run build
-        env:
-          VITE_API_URL: https://localhost:7001
+      # The same targets as local work (frontend/Dockerfile): lint, typecheck and unit tests, then the production image.
+      - run: docker build --target test frontend
+      - run: docker build frontend

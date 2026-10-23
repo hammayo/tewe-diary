@@ -83,17 +83,47 @@ services:
       - JWT_AUDIENCE=${JWT_AUDIENCE}
       - API_KEY=${API_KEY}
 
-  # Frontend shell: static build served by nginx on Vite's default dev port, so `npm run dev`
-  # and the container share one URL. VITE_API_URL is baked in at build time.
+  # Frontend: static build served by nginx, which also proxies /api and /identity (same origin, no CORS).
+  # Port 5173 matches `npm run dev`. See _docs/_getting-started.md for the dev and test variants.
   frontend:
     build:
       context: frontend
-      args:
-        VITE_API_URL: ${VITE_API_URL:-https://localhost:7001}
     container_name: tewe-frontend
     restart: unless-stopped
+    depends_on:
+      - movies-api
+      - identity-api
+    environment:
+      - MOVIES_UPSTREAM=http://movies-api:8080
+      - IDENTITY_UPSTREAM=http://identity-api:8080
     ports:
       - '5173:8080'
+
+  # Hot-reload dev server: `docker compose --profile dev up frontend-dev`, then open http://localhost:5174.
+  frontend-dev:
+    profiles: ['dev']
+    build:
+      context: frontend
+      target: dev
+    container_name: tewe-frontend-dev
+    depends_on:
+      - movies-api
+      - identity-api
+    environment:
+      - MOVIES_UPSTREAM=http://movies-api:8080
+      - IDENTITY_UPSTREAM=http://identity-api:8080
+    ports:
+      - '5174:5173'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # keep the image's node_modules, not the host's
+
+  # Lint, typecheck and unit tests: `docker compose run --rm --build frontend-test`.
+  frontend-test:
+    profiles: ['test']
+    build:
+      context: frontend
+      target: test
 
 volumes:
   pgdata:

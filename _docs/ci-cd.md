@@ -26,7 +26,8 @@ build ─→ test ─→ build images (Movies.Api + Identity.Api) ─→ migrate
 - **Rollback** re-points both Web Apps at the previous commit's image (tags are commit SHAs); see
   [Roll back](azure-deployment.md#roll-back-a-bad-deploy).
 
-- **Frontend** (`frontend.yml`) runs `npm ci --ignore-scripts` and `npm run build` for `frontend/**` changes only.
+- **Frontend** (`frontend.yml`) builds the `test` target (lint, typecheck, unit tests) and then the production image from
+  `frontend/Dockerfile`, for `frontend/**` changes only. It is the same Docker targets as local work.
 
 ## Secrets & configuration
 

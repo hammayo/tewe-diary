@@ -1,17 +1,27 @@
-# Frontend image: build with Vite, serve the static output with nginx.
-# Build from the repo root or from frontend/ (the context is frontend/): `docker build frontend`
-FROM node:22-alpine AS build
+# Frontend image, one file for dev, test and deploy (PRD D17). Build context is frontend/.
+#   docker build --target test frontend    lint, typecheck and unit tests
+#   docker build frontend                  production image (nginx, port 8080)
+#   docker compose --profile dev up frontend-dev   Vite dev server with hot reload
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci --ignore-scripts
 
-# VITE_* values are baked into the bundle at build time.
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
+FROM deps AS dev
 COPY . .
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host"]
+
+FROM dev AS test
+CMD ["npm", "run", "check"]
+
+FROM dev AS build
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:alpine AS final
+# The nginx image fills ${...} in templates from the environment at start-up (compose overrides these).
+ENV MOVIES_UPSTREAM=http://movies-api:8080 \
+    IDENTITY_UPSTREAM=http://identity-api:8080
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

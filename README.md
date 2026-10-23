@@ -83,7 +83,7 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ## Roadmap
 
-- **React frontend** (placeholder shell in `frontend/`). A small React app that exercises the API end to end, so a reviewer
+- **React frontend** (phase 1 built in `frontend/`, see [the PRD](_docs/prds/_04-react-frontend-prd.md) and [running it](_docs/_getting-started.md#frontend)). A small React app that exercises the API end to end, so a reviewer
   can see it working without Postman or curl. It signs in through `Identity.Api`, keeps
   the JWT in memory and shows what each authorisation tier unlocks:
   - anonymous: the poster grid with title and year filters, sorting and paging, and a

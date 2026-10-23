@@ -19,7 +19,7 @@ A production-shaped .NET 10 REST API for movies and ratings. It is a portfolio p
 - Authorisation is policy-based (`Admin`, `Trusted`), with the JWT signing secret shared with Identity
 - Writes evict the output-cache tag for movies
 - Central package management (`backend/Directory.Packages.props`). The target framework lives in `backend/Directory.Build.props`, not in the `.csproj` files
-- v2 is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, beside the v1 controllers. `frontend/` is the React app and builds on its own
+- v2 is Minimal API endpoints in `Movies.Api/Endpoints/V2/`, beside the v1 controllers. `frontend/` is the React app and builds on its own (`docker compose run --rm --build frontend-test` runs its checks; `_docs/_getting-started.md#frontend`)
 
 ## This repo's stack is not a violation
 
